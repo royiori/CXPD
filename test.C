@@ -4,5 +4,5 @@ MyRootGui *gMyRootGui;
 
 void test()
 {
-    gMyRootGui = new MyRootGui(gClient->GetRoot(), 850, 650); 
+    gMyRootGui = new MyRootGui(gClient->GetRoot(), 1250, 580); 
 }

@@ -1,0 +1,17 @@
+{
+    "files.associations": {
+        "ostream": "c",
+        "__split_buffer": "cpp",
+        "string": "cpp",
+        "vector": "cpp",
+        "memory": "cpp",
+        "utility": "cpp",
+        "iostream": "cpp",
+        "__tree": "cpp",
+        "atomic": "cpp",
+        "ios": "cpp",
+        "map": "cpp",
+        "system_error": "cpp",
+        "algorithm": "cpp"
+    }
+}
