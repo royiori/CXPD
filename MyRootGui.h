@@ -387,7 +387,7 @@ MyRootGui::MyRootGui(const TGWindow *p, int w, int h) : TGMainFrame(p, w, h)
     fOutputLabel1->SetWrapLength(-1);
     fOutputLabel1->SetTextJustify(1);
     this->AddFrame(fOutputLabel1, new TGLayoutHints(kLHintsLeft | kLHintsTop, 2, 2, 2, 2));
-    fOutputLabel1->MoveResize(x0, y0, 220, 120);
+    fOutputLabel1->MoveResize(x0, y0, 220, 200);
 
     //---------------------
     // embedded canvas

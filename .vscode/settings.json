@@ -12,6 +12,9 @@
         "ios": "cpp",
         "map": "cpp",
         "system_error": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "iterator": "cpp",
+        "__functional_03": "cpp",
+        "functional": "cpp"
     }
 }

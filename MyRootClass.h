@@ -272,13 +272,13 @@ void MyRootClass::DrawPre()
         return;
 
     int _ip = ip;
-    while(_ip>=0)
+    while(_ip>=1)
     {
         _ip--;
         if(fEventList.at(_ip)->GetDataQuality()==1) break;
     }
     ip = _ip;
-    fEventList.at(ip)->Get2DPlot()->Draw("colz");
+    fEventList.at(ip)->Draw2DResult();
 }
 
 void MyRootClass::DrawNext()
@@ -293,7 +293,7 @@ void MyRootClass::DrawNext()
         if(fEventList.at(_ip)->GetDataQuality()==1) break;
     }
     ip = _ip;    
-    fEventList.at(ip)->Get2DPlot()->Draw("colz");
+    fEventList.at(ip)->Draw2DResult();
 }
 
 void MyRootClass::DrawSelected(int _ip)
@@ -302,7 +302,7 @@ void MyRootClass::DrawSelected(int _ip)
         return;
 
     ip = _ip;
-    fEventList.at(ip)->Get2DPlot()->Draw("colz");
+    fEventList.at(ip)->Draw2DResult();
 }
 
 TString *MyRootClass::GetInfo()
@@ -312,6 +312,7 @@ TString *MyRootClass::GetInfo()
 
 void MyRootClass::ButtonFunc11()
 {
+    fEventList.at(ip)->DrawEllipse();
 }
 
 //______________________________________________________________________________

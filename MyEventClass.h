@@ -16,19 +16,14 @@
 #include <iostream>
 
 //----
-// fit function
+// fit data
 //
-double lineFunc(double *_x, double *par)
-{
-    double b = par[0];
-    double k = par[1];
-    double x = _x[0];
-    double y = _x[1];
-    double dist;
-
-    dist = fabs(k * x + b - y) / sqrt(1 + k * k);
-    return 1 / dist;
-}
+double xmean = 0; //bary
+double ymean = 0;
+double qtot = 0;
+double xmean2 = 0; //impact point
+double ymean2 = 0;
+double qtot2 = 0;
 
 //----
 // chisquare function
@@ -41,11 +36,11 @@ void myFcn(Int_t & /*nPar*/, Double_t * /*grad*/, Double_t &fval, Double_t *p, I
 {
     int n = coords.size();
     double chi2 = 0;
-    double x, y;
+    double tmp, x, y;
     double dist;
 
-    double k = p[1];
-    double b = p[0];
+    double k = p[0];
+    double b = ymean - k * xmean;
 
     for (int i = 0; i < n; ++i)
     {
@@ -59,13 +54,40 @@ void myFcn(Int_t & /*nPar*/, Double_t * /*grad*/, Double_t &fval, Double_t *p, I
 
         dist = fabs(k * x + b - y) / sqrt(1 + k * k);
 
-        chi2 += values[i] * dist * dist;
+        chi2 += pow(values[i] / qtot * dist, 2);
     }
     fval = (chi2 == 0) ? 1E19 : chi2;
 }
 
+void myFcn2(Int_t & /*nPar*/, Double_t * /*grad*/, Double_t &fval, Double_t *p, Int_t /*iflag */)
+{
+    int n = coords.size();
+    double chi2 = 0;
+    double tmp, x, y;
+    double dist;
 
+    double k = p[0];
+    double b = ymean2 - k * xmean2;
 
+    for (int i = 0; i < n; ++i)
+    {
+        if (values[i] == 0)
+            continue;
+        if (p[0] == 0 && p[1] == 0)
+            continue;
+
+        x = coords[i].first;
+        y = coords[i].second;
+
+        dist = fabs(k * x + b - y) / sqrt(1 + k * k);
+
+        double d0 = sqrt((x - xmean2) * (x - xmean2) + (y - ymean2) * (y - ymean2));
+        //d0 = (d0<1) ? 1 : d0;
+
+        chi2 += pow(dist * exp(-d0/2), 2);
+    }
+    fval = (chi2 == 0) ? 1E19 : chi2;
+}
 
 //-----------------------------------------------------------------------------------------------
 //
@@ -84,7 +106,8 @@ class MyEventClass
         ny = ymax - ymin + 1;
         f2D = NULL;
         mBcenter = NULL;
-        lPrinAxis = NULL;
+        lPrinAxis1 = NULL;
+        lPrinAxis2 = NULL;
         mCovPoint = NULL;
         lCovAxis = NULL;
         info = NULL;
@@ -98,19 +121,37 @@ class MyEventClass
 
     void Fill(int x, int y, double _b) { data[x - xmin][y - ymin] = _b; };
     void GenerateHist(TH2F *ped);
-    void AnalysisHist(TH2F *ped);
-    void Fill2DPlot(TH2F*);
+    void AnalysisHist();
+    void Fill2DPlot(TH2F *);
 
     TH2F *Get2DPlot() { return f2D; };
     TH2F *Get2DRawPlot() { return f2D_raw; };
 
     TMarker *GetBaryCenterAsMarker() { return mBcenter; }
-    TLine *GetPrincipalAxis() { return lPrinAxis; }
+    TLine *GetPrincipalAxis1() { return lPrinAxis1; }
+    TLine *GetPrincipalAxis2() { return lPrinAxis2; }
     TMarker *GetConvertionPoint() { return mCovPoint; }
     TLine *GetCovertionAxis() { return lCovAxis; }
     TString *GetInfo() { return info; };
 
-    int GetDataQuality() {return dataQFlag;}
+    int GetDataQuality() { return dataQFlag; }
+
+    void Draw2DResult()
+    {
+        if(f2D!=NULL) f2D->Draw("colz");
+        if(mBcenter!=NULL) mBcenter->Draw();
+        if(mCovPoint!=NULL) mCovPoint->Draw();
+        if(lPrinAxis1!=NULL) lPrinAxis1->Draw();
+        if(lCovAxis!=NULL) lCovAxis->Draw();
+    }
+
+    void DrawEllipse()
+    {
+        if(lPrinAxis2!=NULL) lPrinAxis2->Draw();
+        if(e1!=NULL) e1->Draw();
+        if(e2!=NULL) e2->Draw();
+    }
+
   private:
     int xmin;
     int xmax;
@@ -128,13 +169,18 @@ class MyEventClass
     double lPk, lPb;
     double mCx, mCy;
     double lCk, lCb;
+    double mom2nd;
+    double mom3rd;
 
     TH2F *f2D;
     TH2F *f2D_raw;
-    
+
     TMarker *mBcenter;
     TMarker *mCovPoint;
-    TLine *lPrinAxis;
+    TLine *lPrinAxis1;
+    TLine *lPrinAxis2;
+    TEllipse *e1;
+    TEllipse *e2;
     TLine *lCovAxis;
     TString *info;
 
@@ -157,9 +203,9 @@ void MyEventClass::EtchHistogram(TH2F *f0, TH2F *f1)
     int etchData[netch][netch] = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
 
     //... etching
-    for(int i=xmin; i<nx; i++)
-        for(int j=ymin; j<ny; j++)
-            f1->SetBinContent(i+1, j+1, 0);
+    for (int i = xmin; i < nx; i++)
+        for (int j = ymin; j < ny; j++)
+            f1->SetBinContent(i + 1, j + 1, 0);
 
     for (int i = xmin; i < nx; i++)
         for (int j = ymin; j < ny; j++)
@@ -188,7 +234,6 @@ void MyEventClass::EtchHistogram(TH2F *f0, TH2F *f1)
     return;
 }
 
-
 void MyEventClass::ExpandHistogram(TH2F *f0, TH2F *f1)
 {
     const int netch = 3;
@@ -196,9 +241,9 @@ void MyEventClass::ExpandHistogram(TH2F *f0, TH2F *f1)
     int etchData[netch][netch] = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
 
     //... expand
-    for(int i = xmin; i < nx; i++)
-        for(int j = ymin; j < ny; j++)
-            f1->SetBinContent(i+1, j+1, 0);
+    for (int i = xmin; i < nx; i++)
+        for (int j = ymin; j < ny; j++)
+            f1->SetBinContent(i + 1, j + 1, 0);
 
     for (int i = xmin; i < nx; i++)
         for (int j = ymin; j < ny; j++)
@@ -227,10 +272,6 @@ void MyEventClass::ExpandHistogram(TH2F *f0, TH2F *f1)
 //______________________________________________________________________________
 void MyEventClass::GenerateHist(TH2F *hPed)
 {
-    double xped = 0;
-    double yped = 0;
-    double siz = 1;
-
     if (f2D != NULL)
     {
         delete f2D;
@@ -252,12 +293,8 @@ void MyEventClass::GenerateHist(TH2F *hPed)
                 ped = hPed->GetBinContent(i + 1, j + 1);
 
             double q = data[i - xmin][j - ymin] - ped;
-            f2D_raw->Fill((i - xped) * siz, (j - yped) * siz, (q < 0) ? 0 : q);
-
-            //.. stored for fit..
-            coords.push_back(std::make_pair((i - xped) * siz, (j - yped) * siz));
-            values.push_back(q);
-            errors.push_back(sqrt(q));
+            q = (q < 0) ? 0 : q;
+            f2D_raw->Fill(i + 1, j + 1, q);
         }
 
     //... deal histogram
@@ -278,15 +315,18 @@ void MyEventClass::GenerateHist(TH2F *hPed)
             {
                 clusterSize++;
                 pulseHeight += f2D_raw->GetBinContent(i + 1, j + 1);
-                f2D->SetBinContent(i+1, j+1, f2D_raw->GetBinContent(i+1, j+1));
+                f2D->SetBinContent(i + 1, j + 1, f2D_raw->GetBinContent(i + 1, j + 1));
+
+                //.. stored for fit..
+                coords.push_back(std::make_pair(i + 1, j + 1));
+                values.push_back( f2D_raw->GetBinContent(i + 1, j + 1) );
+                errors.push_back(sqrt( f2D_raw->GetBinContent(i + 1, j + 1) ));
             }
 
     delete ftmp0;
     delete ftmp1;
 
     //... generate info
-    if (info != NULL)
-        delete info;
     info = new TString();
     info->Append(Form("Event Number:      \t%d\n", id));
     info->Append(Form("Cluster Size:         \t%d\n", clusterSize));
@@ -295,26 +335,48 @@ void MyEventClass::GenerateHist(TH2F *hPed)
     if (clusterSize < 20 || pulseHeight < 200)
         return;
     dataQFlag = 1;
+    AnalysisHist();
 }
 
-void MyEventClass::AnalysisHist(TH2F *ped)
+//______________________________________________________________________________
+void MyEventClass::AnalysisHist()
 {
-    //.. the barycenter point ..
-    mBx = f2D->GetMean(1);
-    mBy = f2D->GetMean(2);
-    if (mBcenter != NULL)
-        delete mBcenter;
+    //----------------------
+    //1. find barycenter
+    xmean = 0;
+    ymean = 0;
+    qtot = 0;
+
+    int N = coords.size();
+    for (int i = 0; i < N; i++)
+    {
+        double x = coords[i].first;
+        double y = coords[i].second;
+        double q = values[i];
+
+        cout<<i<<": "<<x<<", "<<y<<"  - "<<q<<endl;
+
+        qtot += q;
+        xmean += q * x;
+        ymean += q * y;
+    }
+
+    xmean /= qtot;
+    ymean /= qtot;
+    mBx = xmean;
+    mBy = ymean;
+
+    //1.1 draw result
     mBcenter = new TMarker(mBx, mBy, 30);
     mBcenter->SetMarkerColor(kRed);
     mBcenter->SetMarkerSize(2.6);
+    mBcenter->Draw();
 
-    //.. fit for principle line ..
-    TF2 *func = new TF2("func", lineFunc, -1, 1, -1, 1, 2);
-
+    //----------------------
+    //2. fit barycenter-line
     TVirtualFitter::SetDefaultFitter("Minuit");
     TVirtualFitter *minuit = TVirtualFitter::Fitter(0, 10);
-    minuit->SetParameter(0, func->GetParName(0), func->GetParameter(0), 0.01, 0, 0);
-    minuit->SetParameter(1, func->GetParName(1), func->GetParameter(1), 0.01, 0, 0);
+    minuit->SetParameter(0, "k", 0, 0.01, 0, 0);
     minuit->SetFCN(myFcn);
 
     double arglist[100];
@@ -325,116 +387,159 @@ void MyEventClass::AnalysisHist(TH2F *ped)
     arglist[1] = 0.01; // tolerance
     minuit->ExecuteCommand("MIGRAD", arglist, 2);
 
-    //get result
-    double minParams[2];
-    double parErrors[2];
-    for (int i = 0; i < 2; ++i)
-    {
-        minParams[i] = minuit->GetParameter(i);
-        parErrors[i] = minuit->GetParError(i);
-    }
-
+    //2.1 get result
     double chi2, edm, errdef;
     int nvpar, nparx;
     minuit->GetStats(chi2, edm, errdef, nvpar, nparx);
 
-    lPb = minParams[0];
-    lPk = minParams[1];
-    if (lPrinAxis != NULL)
-        delete lPrinAxis;
-    double xmin = f2D->GetXaxis()->GetXmin();
-    double xmax = f2D->GetXaxis()->GetXmax();
-    double ymin = f2D->GetYaxis()->GetXmin();
-    double ymax = f2D->GetYaxis()->GetXmax();
-    double _xmin = (ymin - lPb) / lPk;
-    double _xmax = (ymax - lPb) / lPk;
-    double _ymin = lPk * xmin + lPb;
-    double _ymax = lPk * xmax + lPb;
-    std::vector<std::pair<double, double>> _line;
-    if (xmin <= _xmin && _xmin < xmax)
-        _line.push_back(std::make_pair(_xmin, ymin));
-    if (ymin <= _ymin && _ymin < ymax)
-        _line.push_back(std::make_pair(xmin, _ymin));
-    if (xmin <= _xmax && _xmax < xmax)
-        _line.push_back(std::make_pair(_xmax, ymax));
-    if (ymin <= _ymax && _ymax < ymax)
-        _line.push_back(std::make_pair(xmax, _ymax));
-    lPrinAxis = new TLine(_line[0].first, _line[0].second, _line[1].first, _line[1].second);
-    lPrinAxis->SetLineColor(kRed);
+    double k = minuit->GetParameter(0);
+    double b = ymean - k * xmean;
+    lPk = k;
+    lPk = b;
 
-    //.. fit for ejection line ..
-    double max = 0;
-    int imax = -1;
+    //2.2 draw result
+    double lx1 = (k == 0) ? xmin : (ymin - b) / k;
+    double ly1 = (k == 0) ? ymean : ymin;
+    double lx2 = (k == 0) ? xmax : (ymax - b) / k;
+    double ly2 = (k == 0) ? ymean : ymax;
+    double theta1 = atan(k);
 
-    double mom2nd = 0, mom3rd = 0;
-    for (unsigned long i = 0; i < coords.size(); i++)
+    lPrinAxis1 = new TLine(lx1, ly1, lx2, ly2);
+    lPrinAxis1->SetLineColor(kBlack);
+    lPrinAxis1->Draw();
+
+    //----------------------
+    //3. cal mom3rd
+    double k2 = (k == 0) ? 1 : -1 / k;
+    double b2 = (k == 0) ? 1 : ymean - k2 * xmean;
+    double theta2 = (k == 0) ? TMath::Pi()/2 : atan(-1/k);
+
+    mom3rd = 0;
+    for (int i = 0; i < N; i++)
     {
         double x = coords[i].first;
         double y = coords[i].second;
         double q = values[i];
-        if (q == 0)
-            continue;
-
-        double d2 = q * ((x - mBx) * (x - mBx) + (y - mBy) * (y - mBy));
-        double d = (y - lPb - lPk * x) / sqrt(1 + lPk * lPk);
+        double d = (k == 0) ? (x - xmean) * q / qtot : (y - b2 - k2 * x) / sqrt(1 + k2 * k2) * q / qtot;
         double d3 = d * d * d;
-
-        mom2nd += d2;
         mom3rd += d3;
-        if (max < d2)
-        {
-            max = d2;
-            imax = i;
-        }
     }
 
-    cout << "Max 2nd moment: (" << coords[imax].first << ", " << coords[imax].second << ")" << endl;
+    //3.1 draw result
+    lx1 = (k == 0) ? xmean : (ymin - b2) / k2;
+    ly1 = ymin;
+    lx2 = (k == 0) ? xmean : (ymax - b2) / k2;
+    ly2 = ymax;
+    lPrinAxis2 = new TLine(lx1, ly1, lx2, ly2);
+    lPrinAxis2->SetLineColor(kBlue);
+    lPrinAxis2->Draw();
 
-    if (mCovPoint != NULL)
-        delete mCovPoint;
-    mCx = coords[imax].first;
-    mCy = coords[imax].second;
-    mCovPoint = new TMarker(mCx, mCy, 30);
-    mCovPoint->SetMarkerColor(kBlue);
-    mCovPoint->SetMarkerSize(2);
-
-    double sumx = 0;
-    double sumy = 0;
-
-    for (unsigned long i = 0; i < coords.size(); i++)
+    //3.2 cal the average distance
+    double dmax = 0;
+    int nd = 0;
+    for (int i = 0; i < N; i++)
     {
-        double xx = coords[i].first - mCx;
-        double yy = coords[i].second - mCy;
-        double dd = sqrt(xx * xx + yy * yy);
+        double x = coords[i].first;
+        double y = coords[i].second;
         double q = values[i];
-        if (dd == 0 || q == 0)
+        double d = (k == 0) ? (x - xmean) : (y - b2 - k2 * x) / sqrt(1 + k2 * k2);
+        double d3 = d * d * d;
+        if (d3 * mom3rd > 0)
             continue;
-        //cout<<i<<" "<<xx<<" "<<yy<<" "<<dd<<"\n";
-        //if (dd < 3 * siz || dd > 5 * siz)
-        //    continue;
-
-        double frac = q / dd; //weighted as Q/d
-        sumx += frac * xx / dd;
-        sumy += frac * yy / dd;
+        dmax += d;
+        nd++;
     }
+    dmax /= nd;
+    dmax *= 1.1;
 
-    cout << "sum: " << sumy << " " << sumx << endl;
+    //3.3 draw TEllipse
+    double phimin = theta2 / TMath::Pi() * 180;
+    double phimax = theta2 / TMath::Pi() * 180;
+    if(k2>0 && mom3rd>0) phimin -= 180;
+    if(k2>0 && mom3rd<0) phimax += 180;
+    if(k2<0 && mom3rd>0) phimin -= 180;
+    if(k2<0 && mom3rd<0) phimax += 180;
 
-    lCk = sumy / sumx;
-    lCb = coords[imax].second - lCk * coords[imax].first;
+    e1 = new TEllipse(xmean, ymean, dmax, dmax, phimin, phimax);
+    e2 = new TEllipse(xmean, ymean, dmax * 2.33, dmax * 2.33, phimin, phimax);
+    e1->SetFillColorAlpha(kWhite, 0);
+    e2->SetFillColorAlpha(kWhite, 0);
+    e1->Draw();
+    e2->Draw();
 
-    cout << "y = " << lCk << "*x + " << lCb << endl;
+    //----------------------
+    //4. find IP
+    xmean2 = 0;
+    ymean2 = 0;
+    mom2nd = 0;
+    qtot2  = 0;
 
-    if (lCovAxis != NULL)
-        delete lCovAxis;
-    lCovAxis = new TLine((-1 - lCb) / lCk, -1, (1 - lCb) / lCk, 1);
-    lCovAxis->SetLineColor(kBlue);
+    for (int i = 0; i < N; i++)
+    {
+        double x = coords[i].first;
+        double y = coords[i].second;
+        double q = values[i];
+        double d = (k == 0) ? (x - xmean) : (y - b2 - k2 * x) / sqrt(1 + k2 * k2);
+        double d3 = d * d * d;
+        if (d3 * mom3rd > 0)
+            continue;
+        if (sqrt((x - xmean) * (x - xmean) + (y - ymean) * (y - ymean)) < dmax)
+            continue;
+        xmean2 += q * x;
+        ymean2 += q * y;
+        qtot2 += q;
+    }
+    xmean2 /= qtot2;
+    ymean2 /= qtot2;
+    mCx = xmean2;
+    mCy = ymean2;
 
+    mCovPoint = new TMarker(mCx, mCy, 31);
+    mCovPoint->SetMarkerColor(kRed);
+    mCovPoint->SetMarkerSize(2.6);
+    mCovPoint->Draw();
+
+    //----------------------
+    //5. Fit eject line
+    TVirtualFitter *minuit2 = TVirtualFitter::Fitter(0, 10);
+    minuit2->SetParameter(0, "k", 0, 0.01, 0, 0);
+    minuit2->SetFCN(myFcn2);
+
+    arglist[0] = 0;
+    minuit2->ExecuteCommand("SET PRINT", arglist, 2);
+
+    arglist[0] = 5000; // number of function calls
+    arglist[1] = 0.01; // tolerance
+    minuit2->ExecuteCommand("MIGRAD", arglist, 2);
+
+    //5.1 get result
+    minuit2->GetStats(chi2, edm, errdef, nvpar, nparx);
+
+    double k3 = minuit2->GetParameter(0);
+    double b3 = ymean2 - k3 * xmean2;
+
+    lCk = k3;
+    lCb = b3;
+
+    //5.2 draw result
+    lx1 = (k3 == 0) ? xmean2 : (ymin - b3) / k3;
+    ly1 = ymin;
+    lx2 = (k3 == 0) ? xmean2 : (ymax - b3) / k3;
+    ly2 = ymax;
+
+    lCovAxis = new TLine(lx1, ly1, lx2, ly2);
+    lCovAxis->SetLineColor(kRed);
+    lCovAxis->Draw();
+
+    //-------------------
+    //6. generate info
     //info->Append(Form("Singal to Noise:   \t%d\n", id));
     info->Append(Form("Bary Center:       \t(%.2f, %.2f)\n", mBx, mBy));
     info->Append(Form("Principal Axis:  \tk=%.2f, b=%.2f\n", lPk, lPb));
     info->Append(Form("Conversion Point:  \t(%.2f, %.2f)\n", mCx, mCy));
     info->Append(Form("Ejection Axis:  \tk=%.2f, b=%.2f\n", lCk, lCb));
+    info->Append(Form("Mom 3rd:        \t%.5f\n", mom3rd));
+    info->Append(Form("Phi:            \t%.1f %.1f %.1f\n", k2, phimin,phimax));
 }
 
 //______________________________________________________________________________
@@ -442,5 +547,5 @@ void MyEventClass::Fill2DPlot(TH2F *h)
 {
     for (int i = xmin; i <= xmax; i++)
         for (int j = ymin; j <= ymax; j++)
-            h->SetBinContent(i+1, j+1, h->GetBinContent(i+1, j+1) + f2D->GetBinContent(i+1, j+1));
+            h->SetBinContent(i + 1, j + 1, h->GetBinContent(i + 1, j + 1) + f2D->GetBinContent(i + 1, j + 1));
 }
