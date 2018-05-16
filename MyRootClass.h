@@ -135,6 +135,7 @@ void MyRootClass::AnalysisPed(TString pp)
         {
             hPedm->Fill(i + 1, j + 1, fPed[i * NY + j]->GetMean());
             hPeds->Fill(i + 1, j + 1, fPed[i * NY + j]->GetRMS());
+            hPed->SetBinContent(i + 1, j + 1, hPedm->GetBinContent(i + 1, j + 1) + nped * hPeds->GetBinContent(i + 1, j + 1));
         }
     }
 
@@ -149,6 +150,7 @@ void MyRootClass::AnalysisPed(TString pp)
     TFile *rootPedFile = new TFile(rootPedPath, "recreate");
     hPedm->Write();
     hPeds->Write();
+    hPed->Write();
     for (int i = 0; i < NX; i++)
     {
         for (int j = 0; j < NY; j++)

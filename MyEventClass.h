@@ -25,6 +25,11 @@ double xmean2 = 0; //impact point
 double ymean2 = 0;
 double qtot2 = 0;
 
+const int QF_Ped = 0;
+const int QF_Hit = 1;
+const int QF_MuLike = 2;
+const int QF_AfterPulse = 3;
+
 //----
 // chisquare function
 //
@@ -96,7 +101,7 @@ class MyEventClass
   public:
     MyEventClass(int _id, int _xmin, int _xmax, int _ymin, int _ymax)
     {
-        dataQFlag = 0;
+        dataQFlag = QF_Ped;
         id = _id;
         xmin = _xmin;
         xmax = _xmax;
@@ -120,9 +125,10 @@ class MyEventClass
     virtual ~MyEventClass();
 
     void Fill(int x, int y, double _b) { data[x - xmin][y - ymin] = _b; };
-    void GenerateHist(TH2F *ped);
+    void GenerateHist(TH2F *ped, bool anaflag);
     void AnalysisHist();
     void Fill2DPlot(TH2F *);
+
 
     TH2F *Get2DPlot() { return f2D; };
     TH2F *Get2DRawPlot() { return f2D_raw; };
@@ -134,7 +140,12 @@ class MyEventClass
     TLine *GetCovertionAxis() { return lCovAxis; }
     TString *GetInfo() { return info; };
 
+    void SetDataQuality(int f) {dataQFlag = f;}
     int GetDataQuality() { return dataQFlag; }
+    int GetClusterSize() { return clusterSize;}
+    int GetPulseHeight() { return pulseHeight;}
+    vector<vector<int>> GetData() {return data;}
+    double GetData(int x, int y) { return data[x-xmin][y-ymin]; }
 
     void Draw2DResult()
     {
@@ -162,7 +173,7 @@ class MyEventClass
     int id;
 
     int clusterSize;
-    int dataQFlag; //=0 means no data, =1 means has data
+    int dataQFlag; // QF_Ped/QF_Hit/...
     double pulseHeight;
 
     double mBx, mBy;
@@ -184,7 +195,7 @@ class MyEventClass
     TLine *lCovAxis;
     TString *info;
 
-    vector<vector<double>> data;
+    vector<vector<int>> data;
 
     void EtchHistogram(TH2F *, TH2F *);
     void ExpandHistogram(TH2F *, TH2F *);
@@ -270,12 +281,20 @@ void MyEventClass::ExpandHistogram(TH2F *f0, TH2F *f1)
 }
 
 //______________________________________________________________________________
-void MyEventClass::GenerateHist(TH2F *hPed)
+void MyEventClass::GenerateHist(TH2F *hPed, bool anaflag = kTRUE)
 {
     if (f2D != NULL)
     {
         delete f2D;
         delete f2D_raw;
+    }
+
+    if (gDirectory->Get(Form("f2D_%d", id)) != NULL)
+    {
+        TH2F *f1 = (TH2F *)gDirectory->Get(Form("f2D_%d", id));
+        TH2F *f2 = (TH2F *)gDirectory->Get(Form("f2D_%d_0", id));
+        delete f1;
+        delete f2;
     }
 
     f2D = new TH2F(Form("f2D_%d", id), Form("Event %d", id), nx, 1, xmax - xmin + 1, ny, 1, ymax - ymin + 1);
@@ -332,10 +351,12 @@ void MyEventClass::GenerateHist(TH2F *hPed)
     info->Append(Form("Cluster Size:         \t%d\n", clusterSize));
     info->Append(Form("Pulse Height:      \t%.2f\n", pulseHeight));
 
-    if (clusterSize < 20 || pulseHeight < 200)
+    dataQFlag = QF_Ped;
+    if (hPed==NULL || clusterSize < 20 || pulseHeight < 200)
         return;
-    dataQFlag = 1;
-    AnalysisHist();
+    dataQFlag = QF_Hit;
+    if(anaflag) AnalysisHist();
+    return;
 }
 
 //______________________________________________________________________________
@@ -354,7 +375,7 @@ void MyEventClass::AnalysisHist()
         double y = coords[i].second;
         double q = values[i];
 
-        cout<<i<<": "<<x<<", "<<y<<"  - "<<q<<endl;
+        //cout<<i<<": "<<x<<", "<<y<<"  - "<<q<<endl;
 
         qtot += q;
         xmean += q * x;
@@ -381,7 +402,7 @@ void MyEventClass::AnalysisHist()
 
     double arglist[100];
     arglist[0] = 0;
-    minuit->ExecuteCommand("SET PRINT", arglist, 2);
+    //minuit->ExecuteCommand("SET PRINT", arglist, 2);
 
     arglist[0] = 5000; // number of function calls
     arglist[1] = 0.01; // tolerance

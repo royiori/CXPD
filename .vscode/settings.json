@@ -15,6 +15,10 @@
         "algorithm": "cpp",
         "iterator": "cpp",
         "__functional_03": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "bitset": "c",
+        "initializer_list": "c",
+        "iosfwd": "c",
+        "__locale": "c"
     }
 }

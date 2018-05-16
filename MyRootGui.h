@@ -346,7 +346,7 @@ MyRootGui::MyRootGui(const TGWindow *p, int w, int h) : TGMainFrame(p, w, h)
     x0 = 520;
     y0 = 290;
 
-    fGroupFrame3 = new TGGroupFrame(this, "Pedstal: ");
+    fGroupFrame3 = new TGGroupFrame(this, "Pedestal: ");
     fGroupFrame3->SetLayoutBroken(kTRUE);
     fGroupFrame3->SetLayoutManager(new TGVerticalLayout(fGroupFrame2));
     this->AddFrame(fGroupFrame2, new TGLayoutHints(kLHintsLeft | kLHintsTop, 2, 2, 2, 2));

@@ -6,53 +6,97 @@
 // dat[8] = 0 & dat[9] = 0               ;;   time stamp
 // dat[10:*] = ADC                       ;; ADC
 
+const int nFrame = 808;
+const int nChannel = 8;
+const int nXpixel = 72;
+const int nYpixel = 72;
+const int nLength = nChannel*(nXpixel*nYpixel)*nFrame;
+const int nHeader = 1024;
+const int channel = 0;
+
+const char *filetypes[] = {
+                            "raw data file", "*.pd1",
+                            0,               0 };
+
+TString SelectFile()
+{
+  static TString dir(".");
+  TGFileInfo fi;
+  fi.fFileTypes = filetypes;
+  fi.fIniDir    = StrDup(dir);
+  printf("fIniDir = %s\n", fi.fIniDir);
+  new TGFileDialog(gClient->GetRoot(), NULL, kFDOpen, &fi);
+  if(fi.fFilename==NULL) { printf("No file selected!\n"); return TString("NONE"); }
+  printf("Open directory: %s\n", fi.fIniDir);
+  return fi.fIniDir;
+}
+
+
 void readPed()
 {
-    ifstream ifSignal("./data/out835.pd1", ios::binary);
+    TString path = SelectFile();
+    FILE *fp = gSystem->OpenPipe("ls "+path+"/*.pd1", "r");
+    if(!fp) { cout<<"----> NO pd1 data exists in "<<path<<"!"<<endl; return;}
+    
+    vector <TString> pdList;    
+    char line[1000];
+    while(fgets(line, sizeof(line), fp))
+    {
+        TString s(line);
+        if(s.Index(".pd1")==-1) continue;
+        pdList.push_back(s.ReplaceAll("\n",""));
+    }
+    cout<<"----> "<<pdList.size()<<" pd1 data files exist:"<<endl;
 
-    ofstream oftest("./data/out835.mdat", ios::binary);
-
-
-    const int nFrame = 808;
-    const int nChannel = 8;
-    const int nXpixel = 72;
-    const int nYpixel = 72;
-    const int nLength = nChannel*(nXpixel*nYpixel)*nFrame;
-    const int nHeader = 1024;
 
     int headerdat[nHeader];
-    vector<vector <int>> bgdata;
-    unsigned short _data;
-    int channel = 0;
- 
-    bgdata.resize(nFrame);
-    for(int i=0; i<nFrame; i++) bgdata[i].resize(nXpixel*nYpixel);
-
-    if(ifSignal.good())
+    for(int i=0; i<(int)pdList.size(); i++)
     {
-        for(int i=0; i<nHeader; i++) 
-	{
-            ifSignal.read((char*)(&_data), sizeof(_data));
-            headerdat[i] = _data;
-        }
+        TString mdatName = pdList[i];
+        mdatName.Replace(mdatName.Index(".pd1"), 4, ".mdat");
 
-        //
-        // readout the background data
-        //
-        for(int i=0; i<nFrame; i++) 
-	{
-            for(int j=0; j<(nXpixel*nYpixel); j++) 
-	    {
-                ifSignal.seekg((-(nChannel*(nXpixel*nYpixel*(nFrame-i)-j))+channel)*sizeof(_data),ios::end);
+        if(!gSystem->AccessPathName(mdatName, kFileExists)) 
+        {
+            cout<<"-----> "<<mdatName<<" is existed."<<endl;
+            continue;
+        }
+        cout<<"----> converting "<<pdList[i]<<" to "<<mdatName<<endl;;    
+        
+        ifstream ifSignal(pdList[i], ios::binary);
+
+        ofstream oftest(mdatName, ios::binary);
+
+        unsigned short _data;
+        //vector<vector <int>> bgdata;
+        //bgdata.resize(nFrame);
+        //for(int i=0; i<nFrame; i++) bgdata[i].resize(nXpixel*nYpixel);
+
+        if(ifSignal.good())
+        {
+            for(int ii=0; ii<nHeader; ii++) 
+	        {
                 ifSignal.read((char*)(&_data), sizeof(_data));
-                bgdata[i][j] = _data;
-		oftest.write((char *)(&_data), sizeof(_data));
+                headerdat[ii] = _data;
+            }
+
+            //
+            // readout the background data
+            //
+            for(int ii=0; ii<nFrame; ii++) 
+	        {
+                for(int jj=0; jj<(nXpixel*nYpixel); jj++) 
+	            {
+                    ifSignal.seekg((-(nChannel*(nXpixel*nYpixel*(nFrame-ii)-jj))+channel)*sizeof(_data),ios::end);
+                    ifSignal.read((char*)(&_data), sizeof(_data));
+                    //bgdata[i][j] = _data;
+		            oftest.write((char *)(&_data), sizeof(_data));
+                }
             }
         }
-    }
 
-    ifSignal.close();
-    oftest.close();
+        ifSignal.close();
+        oftest.close();
+    }
 }
 
 
