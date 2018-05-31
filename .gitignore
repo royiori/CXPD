@@ -34,5 +34,8 @@
 # User data
 *.pd1
 *.dat
+*.data
 *.mdat
 *.root
+*.bak
+*.json

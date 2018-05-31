@@ -110,10 +110,13 @@ class MyEventClass
         nx = xmax - xmin + 1;
         ny = ymax - ymin + 1;
         f2D = NULL;
+        f2D_raw = NULL;
         mBcenter = NULL;
+        mCovPoint = NULL;
         lPrinAxis1 = NULL;
         lPrinAxis2 = NULL;
-        mCovPoint = NULL;
+        e1 = NULL;
+        e2 = NULL;
         lCovAxis = NULL;
         info = NULL;
 
@@ -128,6 +131,8 @@ class MyEventClass
     void GenerateHist(TH2F *ped, bool anaflag);
     void AnalysisHist();
     void Fill2DPlot(TH2F *);
+    void FillBaryCenter(TH2F *);
+    void FillIPpoint(TH2F *);
 
 
     TH2F *Get2DPlot() { return f2D; };
@@ -147,9 +152,9 @@ class MyEventClass
     vector<vector<int>> GetData() {return data;}
     double GetData(int x, int y) { return data[x-xmin][y-ymin]; }
 
-    void Draw2DResult()
+    void Draw2DResult(const char *opt)
     {
-        if(f2D!=NULL) f2D->Draw("colz");
+        if(f2D!=NULL) f2D->Draw(opt);
         if(mBcenter!=NULL) mBcenter->Draw();
         if(mCovPoint!=NULL) mCovPoint->Draw();
         if(lPrinAxis1!=NULL) lPrinAxis1->Draw();
@@ -204,6 +209,18 @@ class MyEventClass
 MyEventClass::~MyEventClass()
 {
     // Destructor.
+    if(f2D       !=NULL) delete f2D        ;
+    if(f2D_raw   !=NULL) delete f2D_raw    ;
+    if(mBcenter  !=NULL) delete mBcenter   ;
+    if(mCovPoint !=NULL) delete mCovPoint  ;
+    if(lPrinAxis1!=NULL) delete lPrinAxis1 ;
+    if(lPrinAxis2!=NULL) delete lPrinAxis2 ;
+    if(e1        !=NULL) delete e1         ;
+    if(e2        !=NULL) delete e2         ;
+    if(lCovAxis  !=NULL) delete lCovAxis   ;
+    if(info      !=NULL) delete info       ;
+
+    data.clear();
 }
 
 //______________________________________________________________________________
@@ -569,4 +586,14 @@ void MyEventClass::Fill2DPlot(TH2F *h)
     for (int i = xmin; i <= xmax; i++)
         for (int j = ymin; j <= ymax; j++)
             h->SetBinContent(i + 1, j + 1, h->GetBinContent(i + 1, j + 1) + f2D->GetBinContent(i + 1, j + 1));
+}
+
+void MyEventClass::FillBaryCenter(TH2F *h)
+{
+    h->Fill(mBx, mBy);
+}
+
+void MyEventClass::FillIPpoint(TH2F *h)
+{
+    h->Fill(mCx, mCy);
 }

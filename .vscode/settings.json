@@ -19,6 +19,7 @@
         "bitset": "c",
         "initializer_list": "c",
         "iosfwd": "c",
-        "__locale": "c"
+        "__locale": "c",
+        "istream": "cpp"
     }
 }

@@ -119,7 +119,8 @@
 
 #include "MyRootClass.h"
 
-const char *filetypes[] = {"mdat files", "*.mdat",
+const char *filetypes[] = {"data files", "*.data",
+                           "mdat files", "*.mdat",
                            "ROOT files", "*.root",
                            "All files", "*",
                            0, 0};
@@ -167,7 +168,6 @@ class MyRootGui : public TGMainFrame
     TGTextButton *fButton21;
     TGTextButton *fButton22;
     TGTextButton *fButton23;
-
     TGTextButton *fButton31;
     TGTextButton *fButton32;
     TGNumberEntry *fNumberEntry31;
@@ -323,7 +323,7 @@ MyRootGui::MyRootGui(const TGWindow *p, int w, int h) : TGMainFrame(p, w, h)
     fButton21->MoveResize(x0 + 10, y0 + 20, 200, 23);
     fButton21->SetEnabled(kFALSE);
 
-    fButton22 = new TGTextButton(this, "Show barycenters", -1, TGTextButton::GetDefaultGC()(), TGTextButton::GetDefaultFontStruct(), kRaisedFrame);
+    fButton22 = new TGTextButton(this, "Show center/IP points", -1, TGTextButton::GetDefaultGC()(), TGTextButton::GetDefaultFontStruct(), kRaisedFrame);
     fButton22->Connect("Clicked()", "MyRootGui", this, "ButtonFunc22()");
     fButton22->SetTextJustify(36);
     fButton22->SetMargins(0, 0, 0, 0);
@@ -332,7 +332,7 @@ MyRootGui::MyRootGui(const TGWindow *p, int w, int h) : TGMainFrame(p, w, h)
     fButton22->MoveResize(x0 + 10, y0 + 45, 200, 23);
     fButton22->SetEnabled(kFALSE);
 
-    fButton23 = new TGTextButton(this, "Show impact points", -1, TGTextButton::GetDefaultGC()(), TGTextButton::GetDefaultFontStruct(), kRaisedFrame);
+    fButton23 = new TGTextButton(this, "Show polarization results", -1, TGTextButton::GetDefaultGC()(), TGTextButton::GetDefaultFontStruct(), kRaisedFrame);
     fButton23->Connect("Clicked()", "MyRootGui", this, "ButtonFunc23()");
     fButton23->SetTextJustify(36);
     fButton23->SetMargins(0, 0, 0, 0);
@@ -477,7 +477,7 @@ void MyRootGui::Analysis()
 void MyRootGui::DrawPre()
 {
     fCanvas1->cd();
-    gMyRootClass->DrawPre();
+    gMyRootClass->DrawPre("box");
     fCanvas1->Modified();
     fCanvas1->Update();
     fOutputLabel1->SetText(gMyRootClass->GetInfo()->Data());
@@ -492,7 +492,7 @@ void MyRootGui::DrawPre()
 void MyRootGui::DrawNext()
 {
     fCanvas1->cd();
-    gMyRootClass->DrawNext();
+    gMyRootClass->DrawNext("box");
     fCanvas1->Modified();
     fCanvas1->Update();
     fOutputLabel1->SetText(gMyRootClass->GetInfo()->Data());
@@ -507,7 +507,7 @@ void MyRootGui::DrawNext()
 void MyRootGui::DrawSelected()
 {
     fCanvas1->cd();
-    gMyRootClass->DrawSelected(fHSlider1->GetPosition());
+    gMyRootClass->DrawSelected(fHSlider1->GetPosition(), "box");
     fCanvas1->Modified();
     fCanvas1->Update();
     fOutputLabel1->SetText(gMyRootClass->GetInfo()->Data());
@@ -531,12 +531,12 @@ void MyRootGui::ButtonFunc11()
 void MyRootGui::ButtonFunc21()
 {
     fCanvas1->cd();
-    gMyRootClass->ButtonFunc21();
+    gMyRootClass->ButtonFunc21(1);
     fCanvas1->Modified();
     fCanvas1->Update();
 
     fCanvas2->cd();
-    gMyRootClass->ButtonFunc22();
+    gMyRootClass->ButtonFunc21(2, "box");
     fCanvas2->Modified();
     fCanvas2->Update();    
 }
@@ -544,17 +544,27 @@ void MyRootGui::ButtonFunc21()
 void MyRootGui::ButtonFunc22()
 {
     fCanvas1->cd();
-    gMyRootClass->ButtonFunc22();
+    gMyRootClass->ButtonFunc22(1);
     fCanvas1->Modified();
     fCanvas1->Update();
+
+    fCanvas2->cd();
+    gMyRootClass->ButtonFunc22(2);
+    fCanvas2->Modified();
+    fCanvas2->Update();        
 }
 
 void MyRootGui::ButtonFunc23()
 {
     fCanvas1->cd();
-    gMyRootClass->ButtonFunc23();
+    gMyRootClass->ButtonFunc23(1);
     fCanvas1->Modified();
     fCanvas1->Update();
+
+    fCanvas2->cd();
+    gMyRootClass->ButtonFunc23(2);
+    fCanvas2->Modified();
+    fCanvas2->Update();    
 }
 
 //______________________________________________________________________________

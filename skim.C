@@ -34,6 +34,7 @@ vector<MyEventClass *> fEventList;
 void ReadData(TString pp)
 {
     int tid;
+    for(int i=0; i<fEventList.size(); i++) delete fEventList[i];
     fEventList.clear();
 
     ifstream ifSignal(pp, ios::binary);
@@ -91,6 +92,7 @@ void AnalysisPed(TString pp)
     if (hPed != NULL)
     {
         delete hPed;
+        for(int i=0; i<fPed.size(); i++) delete fPed[i];
         fPed.clear();
     }
 
@@ -236,6 +238,6 @@ void skim()
     // 4. skim of all data files
     for (int i = 0; i < (int)mdatList.size(); i++)
     {
-        Skim(mdatList[i], OfSignal)
+        Skim(mdatList[i], OfSignal);
     }
 }

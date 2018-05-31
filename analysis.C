@@ -2,7 +2,7 @@
 
 MyRootGui *gMyRootGui;
 
-void test()
+void analysis()
 {
     gMyRootGui = new MyRootGui(gClient->GetRoot(), 1250, 580); 
 }

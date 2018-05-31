@@ -27,17 +27,17 @@ class MyRootClass
 
     //1---
     void Analysis(TString);
-    void DrawRaw();
-    void DrawPre();
-    void DrawNext();
-    void DrawSelected(int);
+    void DrawRaw(const char *opt = "colz");
+    void DrawPre(const char *opt = "colz");
+    void DrawNext(const char *opt = "colz");
+    void DrawSelected(int, const char *opt = "colz");
     void ButtonFunc11();
     TString *GetInfo();
 
     //2---
-    void ButtonFunc21();
-    void ButtonFunc22();
-    void ButtonFunc23();
+    void ButtonFunc21(int, const char *opt = "colz");
+    void ButtonFunc22(int, const char *opt = "colz");
+    void ButtonFunc23(int, const char *opt = "colz");
 
     //3---
     void ButtonFunc31(double);
@@ -61,7 +61,11 @@ class MyRootClass
     TString rootPedPath;
 
     TH2F *hAll1; // plot all hits in one histogram
-    TH2F *hAll2; // plot all hits in one histogram
+    TH2F *hAll2; // plot all hits in one histogram (remove ped)
+    TH2F *hBaryCenter; // plot the all barycenter
+    TH2F *hIPoint;     // plot the all IP point;
+
+
 
     vector<TH1F *> fPed;
     vector<MyEventClass *> fEventList;
@@ -222,9 +226,13 @@ void MyRootClass::Analysis(TString filePath)
     {
         delete hAll1;
         delete hAll1;
+        delete hBaryCenter;
+        delete hIPoint;
     }
     hAll1 = new TH2F("hAll1", "Histogram of all hits", NX, 1, NX + 1, NY, 1, NY + 1);
     hAll2 = new TH2F("hAll2", "Histogram of all hits", NX, 1, NX + 1, NY, 1, NY + 1);
+    hBaryCenter = new TH2F("hBaryCenter", "Histogram of all barycenters", NX, 1, NX + 1, NY, 1, NY + 1);
+    hIPoint = new TH2F("hIPoint", "Histogram of all IP points", NX, 1, NX + 1, NY, 1, NY + 1);
 
     fEventList.clear();
 
@@ -238,6 +246,12 @@ void MyRootClass::Analysis(TString filePath)
         unsigned short _data[NX][NY];
         ifSignal.read((char *)(&_data), sizeof(_data));
 
+        if(_data[0][0] == 0xFFFF && _data[1][1] == 0xFFFF)
+        {
+            ifSignal.read((char *)(&_data), sizeof(_data));
+            continue;
+        }
+
         MyEventClass *fEvent = new MyEventClass(nEvent, 0, NX-1, 0, NY-1);
 
         for (int i = 0; i < NX; i++)
@@ -250,6 +264,8 @@ void MyRootClass::Analysis(TString filePath)
 
         fEvent->GenerateHist(hPed);
         fEvent->Fill2DPlot(hAll2);
+        fEvent->FillBaryCenter(hBaryCenter);
+        fEvent->FillIPpoint(hIPoint);
         fEventList.push_back(fEvent);
 
         nEvent++;
@@ -263,12 +279,12 @@ void MyRootClass::Analysis(TString filePath)
     ifSignal.close();
 }
 
-void MyRootClass::DrawRaw()
+void MyRootClass::DrawRaw(const char *opt)
 {
-    fEventList.at(ip)->Get2DRawPlot()->Draw("colz");
+    fEventList.at(ip)->Get2DRawPlot()->Draw(opt);
 }
 
-void MyRootClass::DrawPre()
+void MyRootClass::DrawPre(const char *opt)
 {
     if (ip <= 0)
         return;
@@ -280,10 +296,10 @@ void MyRootClass::DrawPre()
         if(fEventList.at(_ip)->GetDataQuality()==1) break;
     }
     ip = _ip;
-    fEventList.at(ip)->Draw2DResult();
+    fEventList.at(ip)->Draw2DResult(opt);
 }
 
-void MyRootClass::DrawNext()
+void MyRootClass::DrawNext(const char *opt)
 {
     if ((unsigned long)ip == fEventList.size() - 1)
         return;
@@ -295,16 +311,16 @@ void MyRootClass::DrawNext()
         if(fEventList.at(_ip)->GetDataQuality()==1) break;
     }
     ip = _ip;    
-    fEventList.at(ip)->Draw2DResult();
+    fEventList.at(ip)->Draw2DResult(opt);
 }
 
-void MyRootClass::DrawSelected(int _ip)
+void MyRootClass::DrawSelected(int _ip, const char *opt)
 {
     if(_ip < 0 || _ip > fEventList.size() - 1) 
         return;
 
     ip = _ip;
-    fEventList.at(ip)->Draw2DResult();
+    fEventList.at(ip)->Draw2DResult(opt);
 }
 
 TString *MyRootClass::GetInfo()
@@ -319,17 +335,20 @@ void MyRootClass::ButtonFunc11()
 
 //______________________________________________________________________________
 
-void MyRootClass::ButtonFunc21()
+void MyRootClass::ButtonFunc21(int flag, const char *opt)
 {
-    hAll1->Draw("colz");
+    if(flag==1) hAll1->Draw(opt);
+    else        hAll2->Draw(opt);
 }
 
-void MyRootClass::ButtonFunc22()
+void MyRootClass::ButtonFunc22(int flag, const char *opt)
 {
-    hAll2->Draw("colz");
+    if(flag==1) hBaryCenter->Draw(opt);
+    else        hIPoint->Draw(opt);
 }
 
-void MyRootClass::ButtonFunc23()
+void MyRootClass::ButtonFunc23(int flag, const char *opt)
 {
-    hAll1->Draw("colz");
+    if(flag==1) hAll1->Draw(opt);
+    else        hAll2->Draw(opt);
 }
