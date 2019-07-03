@@ -20,6 +20,7 @@
         "initializer_list": "c",
         "iosfwd": "c",
         "__locale": "c",
-        "istream": "cpp"
+        "istream": "cpp",
+        "analysis.C": "cpp"
     }
 }
