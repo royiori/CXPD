@@ -124,6 +124,16 @@ void FcnToFitBaryLineByBesselLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_
     double ts = p[8]; //bessel的扫描精度，请固定住不要变化
 
     //cout<<"hei "<<mBy<<" "<<mBx<<endl;
+    vector<double> bxlist;
+    vector<double> bylist;
+    for (double t = 0; t < 1 - ts; t += ts)
+    {
+        double bx = BX(t, plist);
+        double by = BY(t, plist);
+        bxlist.push_back(bx);
+        bylist.push_back(by);
+    }
+
     for (int i = 0; i < n; ++i)
     {
         if (values[i] == 0)
@@ -133,10 +143,10 @@ void FcnToFitBaryLineByBesselLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_
         y = coords[i].second;
         double distMin = 9999;
 
-        for (double t = 0; t < 1 - ts; t += ts)
+        for (int j = 0; j < (int)bxlist.size(); j++)
         {
-            double bx = BX(t, plist);
-            double by = BY(t, plist);
+            double bx = bxlist[j];
+            double by = bylist[j];
             double dtmp = sqrt((x - bx) * (x - bx) + (y - by) * (y - by));
             distMin = (dtmp < distMin) ? dtmp : distMin;
         }
@@ -876,8 +886,6 @@ void MyEventClass::AnalysisHist2()
 
         if (imin == -1)
             return;
-    
-
     }
 
     //2. 拟合bessel曲线的形式
@@ -899,7 +907,7 @@ void MyEventClass::AnalysisHist2()
         arglist[0] = 0;
         minuit->ExecuteCommand("SET NOWarnings", arglist, 1);
 
-        arglist[0] =  -1;
+        arglist[0] = -1;
         minuit->ExecuteCommand("SET PRINT", arglist, 1);
 
         arglist[0] = 5000;  // number of function calls
