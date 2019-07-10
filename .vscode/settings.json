@@ -21,6 +21,8 @@
         "iosfwd": "c",
         "__locale": "c",
         "istream": "cpp",
-        "analysis.C": "cpp"
+        "analysis.C": "cpp",
+        "skim.C": "cpp",
+        "type_traits": "cpp"
     }
 }
