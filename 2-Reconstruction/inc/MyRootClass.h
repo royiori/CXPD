@@ -73,14 +73,21 @@ private:
     int nEtchingMatrix;
     int nExpandMatrix;
     int nEtchExpand;
+    int ByMethod;
+
+    bool useped; // flag for using ped or not
+    double nped; // nped * sigma will be removed
+
+    //methode-1
     int nXSpatRes;
     int nYSpatRes;
 	double nEllipticity;
     double rMinScale;
     double rMaxScale;
 
-    bool useped; // flag for using ped or not
-    double nped; // nped * sigma will be removed
+    //methode-2
+    int HitDist;
+    int MinHitsAsCluster;
 
     TH2F *hPed;
     TH2F *hPedm;

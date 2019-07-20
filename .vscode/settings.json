@@ -23,6 +23,13 @@
         "istream": "cpp",
         "analysis.C": "cpp",
         "skim.C": "cpp",
-        "type_traits": "cpp"
+        "type_traits": "cpp",
+        "array": "cpp",
+        "string_view": "cpp",
+        "__hash_table": "cpp",
+        "set": "cpp",
+        "span": "cpp",
+        "unordered_set": "cpp",
+        "forward_list": "cpp"
     }
 }

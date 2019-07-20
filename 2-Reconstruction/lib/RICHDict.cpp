@@ -42,25 +42,25 @@ namespace std {} using namespace std;
 // Header files passed via #pragma extra_include
 
 namespace ROOT {
-   static TClass *MyRootGui_Dictionary();
-   static void MyRootGui_TClassManip(TClass*);
    static void delete_MyRootGui(void *p);
    static void deleteArray_MyRootGui(void *p);
    static void destruct_MyRootGui(void *p);
+   static void streamer_MyRootGui(TBuffer &buf, void *obj);
 
    // Function generating the singleton type initializer
    static TGenericClassInfo *GenerateInitInstanceLocal(const ::MyRootGui*)
    {
       ::MyRootGui *ptr = 0;
-      static ::TVirtualIsAProxy* isa_proxy = new ::TIsAProxy(typeid(::MyRootGui));
+      static ::TVirtualIsAProxy* isa_proxy = new ::TInstrumentedIsAProxy< ::MyRootGui >(0);
       static ::ROOT::TGenericClassInfo 
-         instance("MyRootGui", "inc/MyRootGui.h", 27,
+         instance("MyRootGui", ::MyRootGui::Class_Version(), "inc/MyRootGui.h", 27,
                   typeid(::MyRootGui), ::ROOT::Internal::DefineBehavior(ptr, ptr),
-                  &MyRootGui_Dictionary, isa_proxy, 0,
+                  &::MyRootGui::Dictionary, isa_proxy, 16,
                   sizeof(::MyRootGui) );
       instance.SetDelete(&delete_MyRootGui);
       instance.SetDeleteArray(&deleteArray_MyRootGui);
       instance.SetDestructor(&destruct_MyRootGui);
+      instance.SetStreamerFunc(&streamer_MyRootGui);
       return &instance;
    }
    TGenericClassInfo *GenerateInitInstance(const ::MyRootGui*)
@@ -69,18 +69,50 @@ namespace ROOT {
    }
    // Static variable to force the class initialization
    static ::ROOT::TGenericClassInfo *_R__UNIQUE_DICT_(Init) = GenerateInitInstanceLocal((const ::MyRootGui*)0x0); R__UseDummy(_R__UNIQUE_DICT_(Init));
-
-   // Dictionary for non-ClassDef classes
-   static TClass *MyRootGui_Dictionary() {
-      TClass* theClass =::ROOT::GenerateInitInstanceLocal((const ::MyRootGui*)0x0)->GetClass();
-      MyRootGui_TClassManip(theClass);
-   return theClass;
-   }
-
-   static void MyRootGui_TClassManip(TClass* ){
-   }
-
 } // end of namespace ROOT
+
+//______________________________________________________________________________
+atomic_TClass_ptr MyRootGui::fgIsA(0);  // static to hold class pointer
+
+//______________________________________________________________________________
+const char *MyRootGui::Class_Name()
+{
+   return "MyRootGui";
+}
+
+//______________________________________________________________________________
+const char *MyRootGui::ImplFileName()
+{
+   return ::ROOT::GenerateInitInstanceLocal((const ::MyRootGui*)0x0)->GetImplFileName();
+}
+
+//______________________________________________________________________________
+int MyRootGui::ImplFileLine()
+{
+   return ::ROOT::GenerateInitInstanceLocal((const ::MyRootGui*)0x0)->GetImplFileLine();
+}
+
+//______________________________________________________________________________
+TClass *MyRootGui::Dictionary()
+{
+   fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::MyRootGui*)0x0)->GetClass();
+   return fgIsA;
+}
+
+//______________________________________________________________________________
+TClass *MyRootGui::Class()
+{
+   if (!fgIsA.load()) { R__LOCKGUARD(gInterpreterMutex); fgIsA = ::ROOT::GenerateInitInstanceLocal((const ::MyRootGui*)0x0)->GetClass(); }
+   return fgIsA;
+}
+
+//______________________________________________________________________________
+void MyRootGui::Streamer(TBuffer &R__b)
+{
+   // Stream an object of class MyRootGui.
+
+   TGMainFrame::Streamer(R__b);
+}
 
 namespace ROOT {
    // Wrapper around operator delete
@@ -93,6 +125,10 @@ namespace ROOT {
    static void destruct_MyRootGui(void *p) {
       typedef ::MyRootGui current_t;
       ((current_t*)p)->~current_t();
+   }
+   // Wrapper around a custom streamer member function.
+   static void streamer_MyRootGui(TBuffer &buf, void *obj) {
+      ((::MyRootGui*)obj)->::MyRootGui::Streamer(buf);
    }
 } // end of namespace ROOT for class ::MyRootGui
 

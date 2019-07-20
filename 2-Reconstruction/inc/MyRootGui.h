@@ -92,7 +92,7 @@ private:
     TEnv *env;
     MyRootClass *gMyRootClass;
 
-    //ClassDef(MyRootGui, 0)
+    ClassDef(MyRootGui, 0)
 };
 
 #endif

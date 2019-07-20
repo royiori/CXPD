@@ -24,6 +24,7 @@
 #define QF_PED 0
 #define QF_HIT 1
 #define QF_FAT 2
+#define QF_MultiCluster 3
 #define QF_MuLike 3
 #define QF_AfterPulse 4
 
@@ -43,18 +44,20 @@ public:
     vector<vector<int>> GetData() { return data; }
     double GetData(int x, int y) { return data[x - xmin][y - ymin]; }
 
-    //--------------------------
-    // 算法1:
-    void AnalysisHist();
-    void Fill2DPlot(TH2F *);
-    void FillBaryCenter(TH2F *);
-    void FillIPpoint(TH2F *);
-    void FillPolarization1(TH1F *);
-    void FillPolarization2(TH1F *);
-    void Filllengththelongest(TH1F *);
-
+    void SetMethod(int m) { ByMethod = m; }
     TH2F *Get2DPlot() { return f2D; };
     TH2F *Get2DRawPlot() { return f2D_raw; };
+
+    //--------------------------
+    // 算法1:
+    void AnalysisHist1();
+    void Fill2DPlot(TH2F *);
+    void FillBaryCenter(TH2F *h) { if (mBx != defVal && mBy != defVal) h->Fill(mBx, mBy); }
+    void FillIPpoint(TH2F *h) {if (mCx != defVal && mCy != defVal) h->Fill(mCx, mCy); }
+    void FillPolarization1(TH1F *h) { if (aTheta1 != defVal) h->Fill(aTheta1); }
+    void FillPolarization2(TH1F *h) { if (aTheta2 != defVal) h->Fill(aTheta2); }
+    void Filllengththelongest(TH1F *h) { h->Fill(sqrt(mom2nd)); }
+
     TMarker *GetBaryCenterAsMarker() { return mBcenter; }
     TLine *GetPrincipalAxis1() { return lPrinAxis1; }
     TLine *GetPrincipalAxis2() { return lPrinAxis2; }
@@ -85,14 +88,32 @@ public:
     //--------------------------
     //算法2
     void AnalysisHist2();
+    vector<pair<double, double>> AnalysisCluster2(vector<pair<double, double>> hlist);
 
+    //--- 算法2的相关参数设置
+    void SetHitDist(int hd) { HitDist = hd; }
+    void SetMinHitsAsCluster(int nh) { MinHitsAsCluster = nh; }
+
+    //--- 算法2的作图
     void Draw2DResultMethod2(const char *opt);
-    void DrawSearchResultMethod2() {;}
+    void DrawSearchResultMethod2() { ; }
 
     //--------------------------
     //结果
-    void Draw2DResult(const char *opt) { Draw2DResultMethod2(opt); }
-    void DrawSearchResult() { DrawSearchResultMethod2(); }
+    void Draw2DResult(const char *opt)
+    {
+        if (ByMethod == 2)
+            Draw2DResultMethod2(opt);
+        else
+            Draw2DResultMethod1(opt);
+    }
+    void DrawSearchResult()
+    {
+        if (ByMethod == 2)
+            DrawSearchResultMethod2();
+        else
+            DrawSearchResultMethod1();
+    }
 
 private:
     //--- basic info.
@@ -106,9 +127,11 @@ private:
     int dataQFlag; // data quality
     vector<vector<int>> data;
 
+    int ByMethod;
+    
     //--- analysis var.
     //算法1
-    //double mBx, mBy;
+    double mBx, mBy;
     double mCx, mCy;
     double lCk, lCb;
     double aTheta1, aTheta2;
@@ -125,15 +148,6 @@ private:
     TEllipse *e2;
     TLine *lCovAxis;
 
-    //算法2
-    vector<pair<double, double>> plist;
-
-    //--- 通用.
-    TH2F *f2D;
-    TH2F *f2D_raw;
-
-    TString *info;
-
     //---- etch&expand
     int nEtchingMatrix;
     int nExpandMatrix;
@@ -146,6 +160,18 @@ private:
 
     void EtchHistogram(TH2F *, TH2F *);
     void ExpandHistogram(TH2F *, TH2F *);
+
+    //算法2
+    vector<vector<pair<double, double>>> clist; //数据分cluster后的列表
+    vector<vector<pair<double, double>>> plist; //Bessel拟合后的plist数据
+    int HitDist;
+    int MinHitsAsCluster;
+
+    //--- 通用.
+    TH2F *f2D_raw; //原始数据
+    TH2F *f2D; //算法1是etch以后的数据，算法2是找到cluster以后的数据
+
+    TString *info;
 };
 
 #endif
