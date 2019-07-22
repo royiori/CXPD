@@ -18,20 +18,17 @@ MyRootClass::MyRootClass(TString fp, TString pp)
     nEtchingMatrix = 3;
     nExpandMatrix = 3;
     nEtchExpand = 2;
-    ByMethod = 1;
     nXSpatRes = 2;
     nYSpatRes = 2;
     rMinScale = 1.;
     rMaxScale = 1.;
     nEllipticity = 1.5;
-
-    HitDist = 0;
-    MinHitsAsCluster = 20;
 };
 
 MyRootClass::~MyRootClass()
 {
     // Destructor.
+    
 }
 
 //______________________________________________________________________________
@@ -42,13 +39,6 @@ TString MyRootClass::GenerateSettingsText()
     TString settings("#Analysis settings:\n\n");
     settings += TString("#The number of events to be analysised， set to '0' means analysis all events\n");
     settings += TString(Form("nEventToAnalysis = %d\n\n", nEventToAnalysis));
-    settings += TString("#Analysis method for reconstruction, should be 1/2, default is 1.\n");
-    settings += TString(Form("ByMethod = %d\n\n", ByMethod));
-    settings += TString("\n-------------------------------\n");
-    settings += TString("--                           --\n");
-    settings += TString("--         Methode 1         --\n");
-    settings += TString("--   by barycenter line fit  --\n");
-    settings += TString("-------------------------------\n\n");
     settings += TString("#The ranking of the etching matrix, should be within [2, 5], default is 3.\n");
     settings += TString(Form("nEtchingMatrix = %d\n\n", nEtchingMatrix));
     settings += TString("#The ranking of the expandng matrix, should be within [2, 5], default is 3.\n");
@@ -65,17 +55,6 @@ TString MyRootClass::GenerateSettingsText()
     settings += TString(Form("rMaxScale = %1.2f\n\n", rMaxScale));
     settings += TString("#The Fatty events screen by ellipticity, should be positive > 1, default is 1.5.\n");
     settings += TString(Form("nEllipticity = %1.2f\n\n", nEllipticity));
-
-    settings += TString("\n-------------------------------\n");
-    settings += TString("--                           --\n");
-    settings += TString("--         Methode 2         --\n");
-    settings += TString("--   by bessel line fit      --\n");
-    settings += TString("-------------------------------\n\n");
-    settings += TString("#The distance between a cluster and a hit, should be [0~2].\n");
-    settings += TString(Form("HitDist = %d\n\n", HitDist));
-    settings += TString("#The minimal cluster size, should be lager than 0.\n");
-    settings += TString(Form("MinHitsAsCluster = %d\n\n", MinHitsAsCluster));
-
 
     return settings;
 }
@@ -109,8 +88,6 @@ void MyRootClass::ReadSettings(TGText *text)
                 nExpandMatrix = WildCardReplace(line).Atoi();
             if (line.BeginsWith("nEtchExpand"))
                 nEtchExpand = WildCardReplace(line).Atoi();
-            if (line.BeginsWith("ByMethod"))
-                ByMethod = WildCardReplace(line).Atoi();
             if (line.BeginsWith("nXSpatRes"))
                 nXSpatRes = WildCardReplace(line).Atoi();
             if (line.BeginsWith("nYSpatRes"))
@@ -121,11 +98,6 @@ void MyRootClass::ReadSettings(TGText *text)
                 rMaxScale = WildCardReplace(line).Atof();
             if (line.BeginsWith("nEllipticity"))
                 nEllipticity = WildCardReplace(line).Atof();
-            if (line.BeginsWith("HitDist"))
-                HitDist = WildCardReplace(line).Atoi();
-            if (line.BeginsWith("MinHitsAsCluster"))
-                MinHitsAsCluster = WildCardReplace(line).Atoi();
-            
         }
         pos.fY = (nline++);
     }
@@ -139,14 +111,11 @@ TString MyRootClass::GenerateSettingsOutput()
     settings += TString(Form("nEtchingMatrix : %d\n", nEtchingMatrix));
     settings += TString(Form("nExpandMatrix : %d\n", nExpandMatrix));
     settings += TString(Form("nEtchExpand : %d\n", nEtchExpand));
-    settings += TString(Form("ByMethod : %d\n", ByMethod));
     settings += TString(Form("nXSpatRes : %d\n", nXSpatRes));
     settings += TString(Form("nYSpatRes : %d\n", nYSpatRes));
     settings += TString(Form("rMinScale : %1.2f\n", rMinScale));
     settings += TString(Form("rMaxScale : %1.2f\n", rMaxScale));
     settings += TString(Form("nEllipticity : %1.2f\n", nEllipticity));
-    settings += TString(Form("HitDist : %d\n", HitDist));
-    settings += TString(Form("MinHitsAsCluster: %d\n", MinHitsAsCluster));
 
     return settings;
 }
@@ -157,14 +126,11 @@ void MyRootClass::UpdateEnvParameters(TEnv *env)
     nEtchingMatrix = env->GetValue("nEtchingMatrix", nEtchingMatrix);
     nExpandMatrix = env->GetValue("nExpandMatrix", nExpandMatrix);
     nEtchExpand = env->GetValue("nEtchExpand", nEtchExpand);
-    ByMethod = env->GetValue("ByMethod", ByMethod);
     nXSpatRes = env->GetValue("nXSpatRes", nXSpatRes);
     nYSpatRes = env->GetValue("nYSpatRes", nYSpatRes);
     rMinScale = env->GetValue("rMinScale", rMinScale);
     rMaxScale = env->GetValue("rMaxScale", rMaxScale);
     nEllipticity = env->GetValue("nEllipticity", nEllipticity);
-    HitDist = env->GetValue("HitDist", HitDist);
-    MinHitsAsCluster = env->GetValue("MinHitsAsCluster", MinHitsAsCluster);
 }
 
 void MyRootClass::SaveSettingsToEnv(TEnv *env)
@@ -173,14 +139,11 @@ void MyRootClass::SaveSettingsToEnv(TEnv *env)
     env->SetValue("nEtchingMatrix", nEtchingMatrix);
     env->SetValue("nExpandMatrix", nExpandMatrix);
     env->SetValue("nEtchExpand", nEtchExpand);
-    env->SetValue("ByMethod", ByMethod);
     env->SetValue("nXSpatRes", nXSpatRes);
     env->SetValue("nYSpatRes", nYSpatRes);
     env->SetValue("rMinScale", rMinScale);
     env->SetValue("rMaxScale", rMaxScale);
     env->SetValue("nEllipticity", nEllipticity);
-    env->SetValue("HitDist", HitDist);
-    env->SetValue("MinHitsAsCluster", MinHitsAsCluster);
     env->SaveLevel(kEnvLocal);
 }
 
@@ -435,7 +398,7 @@ void MyRootClass::AnalysisFile(TString filePath)
         }
 
         MyEventClass *fEvent = new MyEventClass(nEvent, 0, NX - 1, 0, NY - 1);
-        
+
         for (int i = 0; i < NX; i++)
             for (int j = 0; j < NY; j++)
             {
@@ -447,40 +410,18 @@ void MyRootClass::AnalysisFile(TString filePath)
         fEvent->SetEtchingMatrixRank(nEtchingMatrix);
         fEvent->SetExpandMatrixRank(nExpandMatrix);
         fEvent->SetNEtchExpand(nEtchExpand);
-        fEvent->SetMethod(ByMethod);
+        fEvent->SetFattyEventCutOnX(3 * nXSpatRes);
+        fEvent->SetFattyEventCutOnY(3 * nYSpatRes);
+        fEvent->SetRMinScale(rMinScale);
+        fEvent->SetRMaxScale(rMaxScale);
+        fEvent->SetEllipticity(nEllipticity);
 
-        //设置分析用的参数控制
-        if (ByMethod == 2)
-        {
-            fEvent->SetHitDist(HitDist);
-            fEvent->SetMinHitsAsCluster(MinHitsAsCluster);
-        }
-        else //method 1
-        {
-            fEvent->SetFattyEventCutOnX(3 * nXSpatRes);
-            fEvent->SetFattyEventCutOnY(3 * nYSpatRes);
-            fEvent->SetRMinScale(rMinScale);
-            fEvent->SetRMaxScale(rMaxScale);
-            fEvent->SetEllipticity(nEllipticity);
-        }
-
-        //分析
         fEvent->GenerateHist((useped) ? hPed : NULL);
-
-        //分析结果填图
-        if (ByMethod == 2)
-        {
-
-        }
-        else //method 1
-        {
-            fEvent->Fill2DPlot(hAll2);
-            fEvent->FillBaryCenter(hBaryCenter);
-            fEvent->FillIPpoint(hIPoint);
-            fEvent->FillPolarization1(hPol1);
-            fEvent->FillPolarization2(hPol2);
-        }
-
+        fEvent->Fill2DPlot(hAll2);
+        fEvent->FillBaryCenter(hBaryCenter);
+        fEvent->FillIPpoint(hIPoint);
+        fEvent->FillPolarization1(hPol1);
+        fEvent->FillPolarization2(hPol2);
         fEventList.push_back(fEvent);
 
         nEvent++;
