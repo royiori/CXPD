@@ -96,7 +96,7 @@ public:
 
     //--- 算法2的作图
     void Draw2DResultMethod2(const char *opt);
-    void DrawSearchResultMethod2() { ; }
+    void DrawSearchResultMethod2();
 
     //--------------------------
     //结果
@@ -144,6 +144,9 @@ private:
     TMarker *mCovPoint;
     TLine *lPrinAxis1;
     TLine *lPrinAxis2;
+	TLine *lP0p1;
+	TLine *lP1p2;
+	TLine *lP2p3;
     TEllipse *e1;
     TEllipse *e2;
     TLine *lCovAxis;
@@ -164,6 +167,7 @@ private:
     //算法2
     vector<vector<pair<double, double>>> clist; //数据分cluster后的列表
     vector<vector<pair<double, double>>> plist; //Bessel拟合后的plist数据
+	vector<pair<double, double>> blist;//画图用中间数据
     int HitDist;
     int MinHitsAsCluster;
 

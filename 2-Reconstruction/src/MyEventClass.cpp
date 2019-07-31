@@ -116,19 +116,19 @@ void FcnToFitBaryLineByBesselLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_
     //(p[0], p[1]) & (p[6], p[7])必须在cluster内部
 
     //参数初始化
-    vector<pair<double, double>> plist;
-    plist.push_back(make_pair(p[0], p[1]));
-    plist.push_back(make_pair(p[2], p[3]));
-    plist.push_back(make_pair(p[4], p[5]));
-    plist.push_back(make_pair(p[6], p[7]));
+    vector<pair<double, double>> ptlist;
+    ptlist.push_back(make_pair(p[0], p[1]));
+    ptlist.push_back(make_pair(p[2], p[3]));
+    ptlist.push_back(make_pair(p[4], p[5]));
+    ptlist.push_back(make_pair(p[6], p[7]));
     double ts = p[8]; //bessel的扫描精度，请固定住不要变化
 
     vector<double> bxlist;
     vector<double> bylist;
     for (double t = 0; t < 1 - ts; t += ts)
     {
-        double bx = BX(t, plist);
-        double by = BY(t, plist);
+        double bx = BX(t, ptlist);
+        double by = BY(t, ptlist);
         bxlist.push_back(bx);
         bylist.push_back(by);
     }
@@ -199,6 +199,9 @@ MyEventClass::MyEventClass(int _id, int _xmin, int _xmax, int _ymin, int _ymax)
     mCovPoint = NULL;
     lPrinAxis1 = NULL;
     lPrinAxis2 = NULL;
+	lP0p1 = NULL;
+	lP1p2 = NULL;
+	lP2p3 = NULL;
     e1 = NULL;
     e2 = NULL;
     lCovAxis = NULL;
@@ -227,6 +230,12 @@ MyEventClass::~MyEventClass()
         delete lPrinAxis1;
     if (lPrinAxis2 != NULL)
         delete lPrinAxis2;
+	if (lP0p1 !=NULL)
+		delete lP0p1;
+	if (lP1p2 !=NULL)
+		delete lP1p2;
+	if (lP2p3 !=NULL)
+		delete lP2p3;
     if (e1 != NULL)
         delete e1;
     if (e2 != NULL)
@@ -360,6 +369,10 @@ void MyEventClass::GenerateHist(TH2F *hPed, bool anaflag)
 
     //... store to data
 
+	coords.clear();
+    values.clear();
+    errors.clear();
+
     for (int i = xmin; i <= xmax; i++)
         for (int j = ymin; j <= ymax; j++)
         {
@@ -389,10 +402,6 @@ void MyEventClass::GenerateHist(TH2F *hPed, bool anaflag)
 //    采用阶矩来进行重建的算法
 void MyEventClass::AnalysisHist1()
 {
-    coords.clear();
-    values.clear();
-    errors.clear();
-
     //----------------------
     //0.0 腐蚀+膨胀
     TH2F *ftmp0 = new TH2F("ftmp0", "ftmp", nx, 1, xmax - xmin + 1, ny, 1, ymax - ymin + 1);
@@ -839,11 +848,35 @@ void MyEventClass::DrawSearchResultMethod1()
         e2->Draw();
 }
 
+// 通用的结果填图
+
+void MyEventClass::DrawSearchResultMethod2()
+{
+	DrawBesselLine(blist, 0.0001);
+    if (lP0p1 != NULL)
+        lP0p1->Draw();
+    if (lP1p2 != NULL)
+        lP1p2->Draw();
+    if (lP2p3 != NULL)
+        lP2p3->Draw();
+}
 //______________________________________________________________________________
 // 2. 算法2
 //    根据hit击中位置来分cluster
 void MyEventClass::AnalysisHist2()
 {
+	for (int i = xmin; i <= xmax; i++)
+        for (int j = ymin; j <= ymax; j++)
+            if (f2D_raw->GetBinContent(i + 1, j + 1) > 0)
+            {
+                f2D->SetBinContent(i + 1, j + 1, f2D_raw->GetBinContent(i + 1, j + 1));
+
+                //.. stored for fit..
+                coords.push_back(make_pair(i + 1, j + 1));
+                values.push_back(f2D_raw->GetBinContent(i + 1, j + 1));
+                errors.push_back(sqrt(f2D_raw->GetBinContent(i + 1, j + 1)));
+            }
+
     vector<vector<pair<double, double>>> tmplist;
 
     //1. cluster分组算法-全扫描方式
@@ -894,6 +927,7 @@ void MyEventClass::AnalysisHist2()
             }
         }
 
+	//cout <<"========= "<<"tmplist size "<<tmplist.size()<<endl;
     //1.6 合并cluster
 
     vector<double> vetolist;
@@ -990,6 +1024,7 @@ void MyEventClass::AnalysisHist2()
         return;
     }
 
+	//cout <<"+++++++++++ "<<"clist size "<<clist.size()<<endl;
     //1.8 找到cluster，进行下一步分析
     dataQFlag = QF_HIT;
 
@@ -1004,13 +1039,14 @@ void MyEventClass::AnalysisHist2()
         f2D->SetTitle(Form("Event %d (identified as Multi-Cluster contained, nCluster = %d)", id, (int)clist.size()));
         return;
     }
-
+	//cout <<"////////// "<<"clist  "<<clist[0].size()<<endl;
     //3. 确定cluster后，给出其特征量
-    //plist.clear();
-    //for (int i = 0; i < (int)clist.size(); i++)
-    //    plist.push_back(AnalysisCluster2(clist[i]));
-}
+    plist.clear();
+    for (int i = 0; i < (int)clist.size(); i++)
+        plist.push_back(AnalysisCluster2(clist[i]));
 
+	//cout <<"-------------- "<<"plist size "<<plist.size()<<endl;
+}
 //_____________________________
 //    根据Bessel来进行径迹寻找
 vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, double>> hitlist)
@@ -1028,7 +1064,7 @@ vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, 
     vector<double> qlist;
     for (int i = 0; i < N; i++)
         qlist.push_back(f2D_raw->GetBinContent(hitlist[i].first + 1, hitlist[i].second + 1));
-
+	//cout <<"____________ "<<"qlist size "<<qlist.size()<<endl;
     //0.2 x/y范围确定
     rxmin = hitlist[0].first;
     rxmax = hitlist[0].first;
@@ -1042,16 +1078,19 @@ vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, 
         rymin = (rymin < hitlist[i].second) ? rymin : hitlist[i].second;
         rymax = (rymax > hitlist[i].second) ? rymax : hitlist[i].second;
     }
-
+	//cout <<" "<<rxmin<<" "<<rxmax<<" "<<endl;
     //0.3 确定Q最大值对应的坐标
     double max = -1;
-    for (int i = 0; i < N; i++)
-        if (qlist[i] > max)
+    for (int i = 0; i < N; i++){
+		if (qlist[i] > max)
         {
             imax = i;
             max = values[i];
         }
-
+		//cout <<"value "<<" "<<qlist[i]<<" "<<endl;
+	}
+        
+	//cout <<" "<<rymin<<" "<<rymax<<" "<<endl;
     //0.4 确定距离Q最大值最远的坐标
     double dist = -1;
     for (int i = 0; i < N; i++)
@@ -1088,11 +1127,47 @@ vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, 
     //2.1 get result
     minuit->GetStats(chi2, edm, errdef, nvpar, nparx);
 
-    vector<pair<double, double>> blist;
     blist.push_back(make_pair(minuit->GetParameter(0), minuit->GetParameter(1)));
     blist.push_back(make_pair(minuit->GetParameter(2), minuit->GetParameter(3)));
     blist.push_back(make_pair(minuit->GetParameter(4), minuit->GetParameter(5)));
     blist.push_back(make_pair(minuit->GetParameter(6), minuit->GetParameter(7)));
+
+	//2.2 draw result
+	lP0p1 = new TLine(blist[0].first, blist[0].second, blist[1].first, blist[1].second);
+	lP0p1->SetLineColor(kBlue);
+	lP1p2 = new TLine(blist[1].first, blist[1].second, blist[2].first, blist[2].second);
+	lP1p2->SetLineColor(kBlue);
+	lP2p3 = new TLine(blist[2].first, blist[2].second, blist[3].first, blist[3].second);
+	lP2p3->SetLineColor(kBlack);
+	
+	//cout <<"|||||||| "<<"blist size "<<blist.size()<<endl;
+	//3 result output
+	double lck = defVal;
+	if (blist[2].first == blist[3].first)
+		{aTheta2 = TMath::Pi();}
+
+	else{
+		lck = (blist[2].second-blist[3].second)/(blist[2].first-blist[3].first);
+		aTheta2 = atan(lck);
+		//cout<<"---- "<<aTheta2<<"  "<<lck<<endl;
+		}
+	if (aTheta2 >0){
+		aTheta2 = ((blist[2].second-blist[3].second)>0) ? aTheta2 :aTheta2 -TMath::Pi();
+		//cout<<"one+++++ "<<aTheta2<<"  "<<lck<<endl;
+		}
+		
+	if (aTheta2 <0){
+		aTheta2 = ((blist[2].second-blist[3].second)>0) ? aTheta2 + TMath::Pi() :aTheta2;
+		//cout<<"two---- "<<aTheta2<<"  "<<lck<<endl;
+		}
+		
+
+	// 结果提取输出
+	info->Append(Form("P0 :       \t(%.2f, %.2f)\n", blist[0].first, blist[0].second));
+	info->Append(Form("P1 :       \t(%.2f, %.2f)\n", blist[1].first, blist[1].second));
+	info->Append(Form("P2 :       \t(%.2f, %.2f)\n", blist[2].first, blist[2].second));
+	info->Append(Form("P3 :       \t(%.2f, %.2f)\n", blist[3].first, blist[3].second));
+	info->Append(Form("aTheta2:   \t%.2f\n", aTheta2));
 
     return blist;
 }
@@ -1101,5 +1176,4 @@ void MyEventClass::Draw2DResultMethod2(const char *opt)
 {
     if (f2D != NULL)
         f2D->Draw(opt);
-    //DrawBesselLine(plist, 0.0001, opt);
 }
