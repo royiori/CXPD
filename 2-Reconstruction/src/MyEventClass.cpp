@@ -13,6 +13,7 @@ using namespace std;
 vector<pair<double, double>> coords;
 vector<double> values; //Q
 vector<double> errors; //dQ
+double Qmax;
 
 int llm = 0;
 double mBx = 0, mBy = 0, qtot = 0;    //bary
@@ -136,7 +137,7 @@ void FcnToFitBaryLineByBesselLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_
     double length = 0;
     for (int i = 1; i < (int)bxlist.size(); i++)
         length += sqrt(pow(bxlist[i] - bxlist[i - 1], 2) + pow(bylist[i] - bylist[i - 1], 2));
-    chi2 += length;
+    chi2 += pow(length, 3/2);
 
     for (int i = 0; i < n; ++i)
     {
@@ -155,7 +156,7 @@ void FcnToFitBaryLineByBesselLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_
             distMin = (dtmp < distMin) ? dtmp : distMin;
         }
 
-        chi2 += values[i] * distMin * distMin;
+        chi2 += values[i] * distMin * distMin / Qmax;
     }
 
     fval = (chi2 == 0) ? 1E19 : chi2;
@@ -961,7 +962,7 @@ void MyEventClass::AnalysisHist2()
             }
         }
 
-        if (veto==0)
+        if (veto == 0)
         {
             //cout << "Set " << clusterMaxId << " to veto list" << endl;
             vetolist.push_back(clusterMaxId);
@@ -1006,58 +1007,67 @@ void MyEventClass::AnalysisHist2()
     }
 
     //3. 确定cluster后，给出其特征量
-    //plist.clear();
-    //for (int i = 0; i < (int)clist.size(); i++)
-    //    plist.push_back(AnalysisCluster2(clist[i]));
+    plist.clear();
+    for (int i = 0; i < (int)clist.size(); i++)
+        plist.push_back(AnalysisCluster2(clist[i]));
 }
 
 //_____________________________
 //    根据Bessel来进行径迹寻找
 vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, double>> hitlist)
 {
+    //fit parameters
     double arglist[100];
     double chi2, edm, errdef;
     int nvpar, nparx;
+    vector<pair<double, double>> blist;
 
-    double rxmin, rxmax, rymin, rymax;
-    int imax = -1;
-    int imin = -1;
-    int N = hitlist.size();
+    //for fit functions
+    coords.clear();
+    values.clear();
+    errors.clear();
 
     //0.1 init
-    vector<double> qlist;
-    for (int i = 0; i < N; i++)
-        qlist.push_back(f2D_raw->GetBinContent(hitlist[i].first + 1, hitlist[i].second + 1));
+    int N = hitlist.size();
+
+    for(int i=0; i<N; i++)
+    {
+        coords.push_back(hitlist[i]);
+        values.push_back(f2D_raw->GetBinContent(hitlist[i].first+1, hitlist[i].second+1));
+        errors.push_back(sqrt(f2D_raw->GetBinContent(hitlist[i].first+1, hitlist[i].second+1)));
+    }
 
     //0.2 x/y范围确定
-    rxmin = hitlist[0].first;
-    rxmax = hitlist[0].first;
-    rymin = hitlist[0].second;
-    rymax = hitlist[0].second;
+    double rxmin = coords[0].first;
+    double rxmax = coords[0].first;
+    double rymin = coords[0].second;
+    double rymax = coords[0].second;
 
     for (int i = 0; i < N; i++)
     {
-        rxmin = (rxmin < hitlist[i].first) ? rxmin : hitlist[i].first;
-        rxmax = (rxmax > hitlist[i].first) ? rxmax : hitlist[i].first;
-        rymin = (rymin < hitlist[i].second) ? rymin : hitlist[i].second;
-        rymax = (rymax > hitlist[i].second) ? rymax : hitlist[i].second;
+        rxmin = (rxmin < coords[i].first) ? rxmin : coords[i].first;
+        rxmax = (rxmax > coords[i].first) ? rxmax : coords[i].first;
+        rymin = (rymin < coords[i].second) ? rymin : coords[i].second;
+        rymax = (rymax > coords[i].second) ? rymax : coords[i].second;
     }
 
     //0.3 确定Q最大值对应的坐标
-    double max = -1;
+    Qmax = -1;
+    int imax = -1;
     for (int i = 0; i < N; i++)
-        if (qlist[i] > max)
+        if (values[i] > Qmax)
         {
             imax = i;
-            max = values[i];
+            Qmax = values[i];
         }
 
     //0.4 确定距离Q最大值最远的坐标
+    int imin = -1;
     double dist = -1;
     for (int i = 0; i < N; i++)
-        if (dist < sqrt(pow(hitlist[imax].first - hitlist[i].first, 2) + pow(hitlist[imax].second - hitlist[i].second, 2)))
+        if (dist < sqrt(pow(coords[imax].first - coords[i].first, 2) + pow(coords[imax].second - coords[i].second, 2)))
         {
-            dist = sqrt(pow(hitlist[imax].first - hitlist[i].first, 2) + pow(hitlist[imax].second - hitlist[i].second, 2));
+            dist = sqrt(pow(coords[imax].first - coords[i].first, 2) + pow(coords[imax].second - coords[i].second, 2));
             imin = i;
         }
 
@@ -1070,8 +1080,8 @@ vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, 
     minuit->SetParameter(3, "p1y", coords[imax].second, 0.01, 0, 0);
     minuit->SetParameter(4, "p2x", coords[imin].first, 0.01, 0, 0);
     minuit->SetParameter(5, "p2y", coords[imin].second, 0.01, 0, 0);
-    minuit->SetParameter(6, "p3x", coords[imin].first, 0.01, xmin, xmax);
-    minuit->SetParameter(7, "p3y", coords[imin].second, 0.01, ymin, ymax);
+    minuit->SetParameter(6, "p3x", coords[imin].first, 0.01, rxmin, rxmax);
+    minuit->SetParameter(7, "p3y", coords[imin].second, 0.01, rymin, rymax);
     minuit->SetParameter(8, "precision", 0.01, 0.01, 0, 0);
     minuit->FixParameter(8);
     minuit->SetFCN(FcnToFitBaryLineByBesselLine);
@@ -1082,13 +1092,13 @@ vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, 
     arglist[0] = -1;
     minuit->ExecuteCommand("SET PRINT", arglist, 1);
 
-    arglist[0] = 5000;  // number of function calls
+    arglist[0] = 10000;  // number of function calls
     arglist[1] = 0.001; // tolerance
     minuit->ExecuteCommand("MIGRAD", arglist, 2);
+
     //2.1 get result
     minuit->GetStats(chi2, edm, errdef, nvpar, nparx);
 
-    vector<pair<double, double>> blist;
     blist.push_back(make_pair(minuit->GetParameter(0), minuit->GetParameter(1)));
     blist.push_back(make_pair(minuit->GetParameter(2), minuit->GetParameter(3)));
     blist.push_back(make_pair(minuit->GetParameter(4), minuit->GetParameter(5)));
@@ -1101,5 +1111,7 @@ void MyEventClass::Draw2DResultMethod2(const char *opt)
 {
     if (f2D != NULL)
         f2D->Draw(opt);
-    //DrawBesselLine(plist, 0.0001, opt);
+
+    for (int i = 0; i < (int)plist.size(); i++)
+        DrawBesselLine(plist[i], 0.0001, opt);
 }
