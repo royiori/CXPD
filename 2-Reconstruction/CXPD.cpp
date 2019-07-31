@@ -14,7 +14,7 @@ int main(int argc, char **argv)
     gStyle->SetOptFit(1);
     gStyle->SetStatFont(42);
 
-    gMyRootGui = new MyRootGui(gClient->GetRoot(), 1250, 620); 
+    gMyRootGui = new MyRootGui(gClient->GetRoot(), 1250, 620);
 
     // run ROOT application
     theApp->Run();

@@ -853,7 +853,8 @@ void MyEventClass::DrawSearchResultMethod1()
 
 void MyEventClass::DrawSearchResultMethod2()
 {
-	DrawBesselLine(blist, 0.0001);
+	for (int i = 0; i < (int)plist.size(); i++)
+    	DrawBesselLine(plist[i], 0.0001);
     if (lP0p1 != NULL)
         lP0p1->Draw();
     if (lP1p2 != NULL)
@@ -1045,10 +1046,6 @@ void MyEventClass::AnalysisHist2()
     plist.clear();
     for (int i = 0; i < (int)clist.size(); i++)
         plist.push_back(AnalysisCluster2(clist[i]));
-<<<<<<< HEAD
-=======
-}
->>>>>>> temp
 
 	//cout <<"-------------- "<<"plist size "<<plist.size()<<endl;
 }
@@ -1068,12 +1065,6 @@ vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, 
     errors.clear();
 
     //0.1 init
-<<<<<<< HEAD
-    vector<double> qlist;
-    for (int i = 0; i < N; i++)
-        qlist.push_back(f2D_raw->GetBinContent(hitlist[i].first + 1, hitlist[i].second + 1));
-	//cout <<"____________ "<<"qlist size "<<qlist.size()<<endl;
-=======
     int N = hitlist.size();
 
     for(int i=0; i<N; i++)
@@ -1083,7 +1074,6 @@ vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, 
         errors.push_back(sqrt(f2D_raw->GetBinContent(hitlist[i].first+1, hitlist[i].second+1)));
     }
 
->>>>>>> temp
     //0.2 x/y范围确定
     double rxmin = coords[0].first;
     double rxmax = coords[0].first;
@@ -1099,22 +1089,15 @@ vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, 
     }
 	//cout <<" "<<rxmin<<" "<<rxmax<<" "<<endl;
     //0.3 确定Q最大值对应的坐标
-<<<<<<< HEAD
-    double max = -1;
-    for (int i = 0; i < N; i++){
-		if (qlist[i] > max)
-=======
     Qmax = -1;
     int imax = -1;
     for (int i = 0; i < N; i++)
         if (values[i] > Qmax)
->>>>>>> temp
         {
             imax = i;
             Qmax = values[i];
         }
 		//cout <<"value "<<" "<<qlist[i]<<" "<<endl;
-	}
         
 	//cout <<" "<<rymin<<" "<<rymax<<" "<<endl;
     //0.4 确定距离Q最大值最远的坐标
@@ -1204,10 +1187,4 @@ void MyEventClass::Draw2DResultMethod2(const char *opt)
 {
     if (f2D != NULL)
         f2D->Draw(opt);
-<<<<<<< HEAD
-=======
-
-    for (int i = 0; i < (int)plist.size(); i++)
-        DrawBesselLine(plist[i], 0.0001, opt);
->>>>>>> temp
 }

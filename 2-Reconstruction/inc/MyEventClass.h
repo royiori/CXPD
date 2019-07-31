@@ -167,7 +167,6 @@ private:
     //算法2
     vector<vector<pair<double, double>>> clist; //数据分cluster后的列表
     vector<vector<pair<double, double>>> plist; //Bessel拟合后的plist数据
-	vector<pair<double, double>> blist;//画图用中间数据
     int HitDist;
     int MinHitsAsCluster;
 

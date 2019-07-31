@@ -470,14 +470,14 @@ void MyRootClass::AnalysisFile(TString filePath)
         //分析结果填图
         if (ByMethod == 2)
         {
-
+			fEvent->FillPolarization2(hPol2);
         }
         else //method 1
         {
             fEvent->Fill2DPlot(hAll2);
             fEvent->FillBaryCenter(hBaryCenter);
             fEvent->FillIPpoint(hIPoint);
-            fEvent->FillPolarization1(hPol1);
+			fEvent->FillPolarization1(hPol1);
             fEvent->FillPolarization2(hPol2);
         }
 
