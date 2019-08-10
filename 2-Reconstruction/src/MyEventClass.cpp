@@ -137,7 +137,7 @@ void FcnToFitBaryLineByBesselLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_
     double length = 0;
     for (int i = 1; i < (int)bxlist.size(); i++)
         length += sqrt(pow(bxlist[i] - bxlist[i - 1], 2) + pow(bylist[i] - bylist[i - 1], 2));
-    chi2 += pow(length, 3/2);
+    chi2 += pow(length, 3 / 2);
 
     for (int i = 0; i < n; ++i)
     {
@@ -160,6 +160,97 @@ void FcnToFitBaryLineByBesselLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_
     }
 
     fval = (chi2 == 0) ? 1E19 : chi2;
+}
+
+//______________________________________________________________________________
+//
+// 用三维Bessel曲线重建时所调用的函数， 三阶Bessel曲线
+double FcnOfBesselLine2(Double_t t, vector<vector<double>> plist, int XYZ)
+{
+    if (t < 0 || t > 1 || (int)plist.size() != 4 || XYZ < 0 || XYZ > 2)
+        return 0;
+
+    double p0 = plist[0][XYZ];
+    double p1 = plist[1][XYZ];
+    double p2 = plist[2][XYZ];
+    double p3 = plist[3][XYZ];
+
+    return p0 * pow(1 - t, 3) + 3 * p1 * t * pow(1 - t, 2) + 3 * p2 * t * t * (1 - t) + p3 * pow(t, 3);
+}
+
+double BX2(Double_t t, vector<vector<double>> plist) { return FcnOfBesselLine2(t, plist, 0); }
+double BY2(Double_t t, vector<vector<double>> plist) { return FcnOfBesselLine2(t, plist, 1); }
+double BZ2(Double_t t, vector<vector<double>> plist) { return FcnOfBesselLine2(t, plist, 2); }
+
+void FcnToFitBaryLineByBesselLine2(Int_t & /*nPar*/, Double_t * /*grad*/, Double_t &fval, Double_t *p, Int_t /*iflag */)
+{
+    int n = coords.size();
+    double chi2 = 0;
+    double x, y;
+
+    //(p[0], p[1]) & (p[9], p[10])必须在cluster内部
+
+    //参数初始化
+    vector<vector<double>> plist;
+    plist.resize(4);
+    for (int i = 0; i < 4; i++)
+        plist[i].resize(3);
+    plist[0][0] = p[0];    
+    plist[0][1] = p[1];
+    plist[0][2] = p[2];
+    plist[1][0] = p[3];
+    plist[1][1] = p[4];
+    plist[1][2] = p[5];
+    plist[2][0] = p[6];
+    plist[2][1] = p[7];
+    plist[2][2] = p[8];
+    plist[3][0] = p[9];
+    plist[3][1] = p[10];
+    plist[3][2] = p[11];
+
+    double ts = p[12]; //bessel的扫描精度，请固定住不要变化
+    double sm = p[13]; //探测器展宽smearing
+    double n0 = p[14]; //整体系数N0
+
+    vector<double> bxlist;
+    vector<double> bylist;
+    vector<double> bzlist;
+    for (double t = 0; t < 1 - ts; t += ts)
+    {
+        double bx = BX2(t, plist);
+        double by = BY2(t, plist);
+        double bz = BZ2(t, plist);
+        bxlist.push_back(bx);
+        bylist.push_back(by);
+        bzlist.push_back(bz);
+    }
+
+    double length = 0;
+    for (int i = 1; i < (int)bxlist.size(); i++)
+        length += sqrt(pow(bxlist[i] - bxlist[i - 1], 2) + pow(bylist[i] - bylist[i - 1], 2));
+    chi2 += pow(length, 3 / 2);
+
+    for (int i = 0; i < n; ++i)
+    {
+        if (values[i] == 0)
+            continue;
+
+        x = coords[i].first;
+        y = coords[i].second;
+        double distMin = 9999;
+
+        for (int j = 0; j < (int)bxlist.size(); j++)
+        {
+            double bx = bxlist[j];
+            double by = bylist[j];
+            double dtmp = sqrt((x - bx) * (x - bx) + (y - by) * (y - by));
+            distMin = (dtmp < distMin) ? dtmp : distMin;
+        }
+
+        chi2 += values[i] * distMin * distMin / Qmax;
+    }
+
+    fval = (chi2 == 0) ? 1E19 : chi2; 
 }
 
 //______________________________________________________________________________
@@ -1030,11 +1121,11 @@ vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, 
     //0.1 init
     int N = hitlist.size();
 
-    for(int i=0; i<N; i++)
+    for (int i = 0; i < N; i++)
     {
         coords.push_back(hitlist[i]);
-        values.push_back(f2D_raw->GetBinContent(hitlist[i].first+1, hitlist[i].second+1));
-        errors.push_back(sqrt(f2D_raw->GetBinContent(hitlist[i].first+1, hitlist[i].second+1)));
+        values.push_back(f2D_raw->GetBinContent(hitlist[i].first + 1, hitlist[i].second + 1));
+        errors.push_back(sqrt(f2D_raw->GetBinContent(hitlist[i].first + 1, hitlist[i].second + 1)));
     }
 
     //0.2 x/y范围确定
@@ -1092,7 +1183,7 @@ vector<pair<double, double>> MyEventClass::AnalysisCluster2(vector<pair<double, 
     arglist[0] = -1;
     minuit->ExecuteCommand("SET PRINT", arglist, 1);
 
-    arglist[0] = 10000;  // number of function calls
+    arglist[0] = 10000; // number of function calls
     arglist[1] = 0.001; // tolerance
     minuit->ExecuteCommand("MIGRAD", arglist, 2);
 

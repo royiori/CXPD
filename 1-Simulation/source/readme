@@ -1,0 +1,9 @@
+geant4 和 garfield联合模拟程序
+--------------------------------黄雪峰记
+通过修改 src/MyGarfieldModel ModelTrigger函数可以简单的开关garfield模拟  同时MyAnalysisManager.c 数据保存部分（tree-Fill)也要注意修改。
+
+通过 Framework 运行geant4程序
+通过RootFileIO  处理纯geant4模拟数据
+通过GarRoot 处理经过garfield模拟后的数据
+
+garfield文件可以读取ansys 和 comsol 文件  现在采用的是comsol文件
