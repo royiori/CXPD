@@ -30,6 +30,8 @@
         "set": "cpp",
         "span": "cpp",
         "unordered_set": "cpp",
-        "forward_list": "cpp"
+        "forward_list": "cpp",
+        "tuple": "cpp",
+        "RootFileIO.C": "cpp"
     }
 }
