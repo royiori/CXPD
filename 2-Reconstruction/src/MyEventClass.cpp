@@ -16,8 +16,9 @@ vector<double> errors; //dQ
 double Qmax;
 
 int llm = 0;
-double mBx = 0, mBy = 0, qtot = 0;    //bary
-double mBx2 = 0, mBy2 = 0, qtot2 = 0; //impact
+double meanBx = 0, meanBy = 0, qtot = 0;    //bary
+double mCx = 0, mCy = 0, qtot2 = 0; //impact
+//double qtot = 0, qtot2 = 0;
 double mom3rd, qDistinguish;
 double lPk, lPb;
 double k2, b2;
@@ -30,8 +31,8 @@ void FcnToFitBaryLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_t &fval, Dou
     double dist;
 
     double k = p[0];
-    double b = mBy - k * mBx;
-    //cout<<"hei "<<mBy<<" "<<mBx<<endl;
+    double b = meanBy - k * meanBx;
+   // cout<<"hei "<<meanBy<<" "<<meanBx<<endl;
     for (int i = 0; i < n; ++i)
     {
         if (values[i] == 0)
@@ -47,6 +48,7 @@ void FcnToFitBaryLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_t &fval, Dou
     fval = (chi2 == 0) ? 1E19 : chi2;
 }
 
+
 void FcnToFitEjectLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_t &fval, Double_t *p, Int_t /*iflag */)
 {
     int n = coords.size();
@@ -56,7 +58,8 @@ void FcnToFitEjectLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_t &fval, Do
     double dist2;
 
     double k = p[0];
-    double b = mBy2 - k * mBx2;
+    double b = mCy - k * mCx;
+	//cout<<"dfdf "<<mCy<<" "<<mCx<<endl;
 
     for (int i = 0; i < n; ++i)
     {
@@ -65,12 +68,12 @@ void FcnToFitEjectLine(Int_t & /*nPar*/, Double_t * /*grad*/, Double_t &fval, Do
 
         x = coords[i].first;
         y = coords[i].second;
-        double dNeed = (lPk == 0) ? (x - mBx) : (y - b2 - k2 * x) / sqrt(1 + k2 * k2); //去除一半的操作
+        double dNeed = (lPk == 0) ? (x - meanBx) : (y - b2 - k2 * x) / sqrt(1 + k2 * k2); //去除一半的操作
         if (dNeed * mom3rd < 0)
             continue;
 
         dist1 = fabs(k * x + b - y) / sqrt(1 + k * k);
-        dist2 = sqrt((x - mBx2) * (x - mBx2) + (y - mBy2) * (y - mBy2));
+        dist2 = sqrt((x - mCx) * (x - mCx) + (y - mCy) * (y - mCy));
         if (dist2 != 0)
             chi2 += values[i] * dist1 * dist1;
     }
@@ -583,6 +586,8 @@ void MyEventClass::AnalysisHist1()
         mBx /= qtot;
         mBy /= qtot;
 
+		meanBx = mBx;
+		meanBy = mBy;
         //1.1 draw result
         mBcenter = new TMarker(mBx, mBy, 30);
         mBcenter->SetMarkerColor(kRed);
@@ -889,8 +894,8 @@ void MyEventClass::AnalysisHist1()
     //k3 +=0;
     if (mom3rd == 0 || dataQFlag == 2)
     {
-        aTheta1 = 2 * TMath::Pi() - 0.05;
-        aTheta2 = 2 * TMath::Pi() - 0.05;
+        aTheta1 = 10 * TMath::Pi() - 0.05;
+        aTheta2 = 10 * TMath::Pi() - 0.05;
         llm++;
     }
 

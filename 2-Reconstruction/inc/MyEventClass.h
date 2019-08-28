@@ -32,6 +32,7 @@ using namespace std;
 
 //-----------------------------------------------------------------------------------------------
 //
+
 class MyEventClass
 {
 public:
@@ -52,8 +53,8 @@ public:
     // 算法1:
     void AnalysisHist1();
     void Fill2DPlot(TH2F *);
-    void FillBaryCenter(TH2F *h) { if (mBx != defVal && mBy != defVal) h->Fill(mBx, mBy); }
-    void FillIPpoint(TH2F *h) {if (mCx != defVal && mCy != defVal) h->Fill(mCx, mCy); }
+	void FillBaryCenter(TH2F *h) { if (mBx != defVal && mBy != defVal) h->Fill(mBx, mBy); }
+    void FillIPpoint(TH2F *h) {if (mBx2 != defVal && mBy2 != defVal) h->Fill(mBx2, mBy2); }
     void FillPolarization1(TH1F *h) { if (aTheta1 != defVal) h->Fill(aTheta1); }
     void FillPolarization2(TH1F *h) { if (aTheta2 != defVal) h->Fill(aTheta2); }
     void Filllengththelongest(TH1F *h) { h->Fill(sqrt(mom2nd)); }
@@ -131,8 +132,8 @@ private:
     
     //--- analysis var.
     //算法1
-    double mBx, mBy;
-    double mCx, mCy;
+	double mBx, mBy, mBx2, mBy2;
+    //double mCx, mCy;
     double lCk, lCb;
     double aTheta1, aTheta2;
     double mom2nd;
