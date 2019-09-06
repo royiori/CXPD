@@ -38,6 +38,7 @@ class MyGunMessenger : public G4UImessenger
 	G4UIcmdWith3Vector* gunDirCmd;
 	G4UIcmdWith3Vector* gunPolCmd;
 	G4UIcmdWith3VectorAndUnit* gunPosCmd;
+	G4UIcmdWithADouble* gunPartPolarCmd;
 
   G4UIcmdWithAString* fRootFileCmd;
   G4UIcmdWithAString* fTxtFileCmd;

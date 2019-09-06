@@ -13,13 +13,16 @@
 #include "G4SystemOfUnits.hh"
 #include "Verbose.hh"
 #include "Randomize.hh"
-//#include <time.h>
 #include <cmath>
 #include "G4RotationMatrix.hh"
 #include "G4Transform3D.hh"
 
 #include "MyGunAction.hh"
-//#define random(x)(rand()%x)
+#include<iostream>
+#include<cstdlib>
+//#include<time.h>
+
+#define random() (rand()/double(RAND_MAX)*M_PI)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 using namespace std;
@@ -63,6 +66,7 @@ MyGunAction::~MyGunAction()
 {
 	delete fParticleGun;
 	delete fParticleSourceGun;
+	delete fGunMessenger;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -79,7 +83,7 @@ void MyGunAction::SetParticle()
     //.. do the calculation
     //.. 1. get the Z of window
 
-    //G4double kovarposi = 32.5 * mm;
+    //G4double kovarposi = 32.5 * mm;   x\需要修改
     G4LogicalVolume *kovarLV = G4LogicalVolumeStore::GetInstance()->GetVolume("Collimation1");
     G4Box *kovarBox = NULL;
     if (kovarLV)
@@ -130,6 +134,23 @@ void MyGunAction::SetParticle()
     G4ThreeVector newgunPos = G4ThreeVector(lunchsquareX, lunchsquareY, lunchsquareZ); //a
 
     //.. 4. calculate the polarization vector
+	G4double monteCarloTheta, monteCarlo, intensityLight;
+	//...4.1 calculate the Elliptical Partially polarized
+	if (gunPartPolarzation < 1){
+		do {
+			G4double palortmp = ( 1 + gunPartPolarzation)/( 1 - gunPartPolarzation);
+			G4double longAxistmp = palortmp/( 1 + palortmp);
+			G4double shortAxistmp = 1 - longAxistmp;
+			//G4cout<<"tmp!!!!!!!! "<<longAxistmp<<" "<<shortAxistmp<<G4endl;
+			monteCarloTheta = random();
+			monteCarlo = rand()/double(RAND_MAX);
+			//cout<<"???????? "<<monteCarloTheta<<" "<<monteCarlo<<' ';
+			intensityLight = longAxistmp * pow(cos(monteCarloTheta),2)+ shortAxistmp * pow(sin(monteCarloTheta),2);
+			newPolarization = G4ThreeVector (gunPolarization[1]*sin(monteCarloTheta)+gunPolarization[0]*cos(monteCarloTheta), gunPolarization[1]*cos(monteCarloTheta)+gunPolarization[0]*sin(monteCarloTheta), 0);
+		}while (intensityLight <= monteCarlo);
+	}
+	//G4cout<<"??? "<<intensityLight<<endl;
+	//.. 4.2 calculate the polarization vector
     G4ThreeVector newaxisZ = gunDirection.unit();
     G4ThreeVector newaxisY = newaxisZ.cross(G4ThreeVector(1, 0, 0));
     if (newaxisY == G4ThreeVector(0, 0, 0))
@@ -137,7 +158,7 @@ void MyGunAction::SetParticle()
 
     G4ThreeVector newaxisX = newaxisY.cross(newaxisZ);
     G4RotationMatrix rotMatrix = G4RotationMatrix(newaxisX, newaxisY, newaxisZ);
-    G4ThreeVector newPola = rotMatrix * gunPolarization.unit();
+    newPola = rotMatrix * newPolarization.unit();
 
 
     //.. 5. set the gun
