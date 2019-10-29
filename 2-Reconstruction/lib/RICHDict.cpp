@@ -139,8 +139,8 @@ namespace {
 0
     };
     static const char* includePaths[] = {
-"/home/stuf/root6-build/include",
-"/home/stuf/gitcxpd/CXPD/2-Reconstruction/",
+"/Users/chad/Work/src/programs/root/root-6.16.00/install/include",
+"/Users/chad/Documents/GitHub/CXPD/2-Reconstruction/",
 0
     };
     static const char* fwdDeclCode = R"DICTFWDDCLS(
@@ -171,7 +171,7 @@ nullptr};
     if (!isInitialized) {
       TROOT::RegisterModule("RICHDict",
         headers, includePaths, payloadCode, fwdDeclCode,
-        TriggerDictionaryInitialization_RICHDict_Impl, {}, classesHeaders);
+        TriggerDictionaryInitialization_RICHDict_Impl, {}, classesHeaders, /*has no C++ module*/false);
       isInitialized = true;
     }
   }

@@ -1,0 +1,15 @@
+/control/verbose 2
+/run/verbose 2
+/run/particle/applyCuts
+/run/initialize
+/run/setCut 0.001
+#/run/setCutForRegion Radiator 0.001
+#/run/setCutForRegion Absorber 1.01
+/geometry/test/run
+/gun/particle pi-
+/gun/position 0 0 0
+/gun/energy 100000.0 MeV
+/tracking/verbose 2
+#
+/run/printProgress 10
+/run/beamOn 10

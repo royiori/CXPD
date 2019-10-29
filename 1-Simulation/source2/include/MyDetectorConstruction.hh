@@ -6,6 +6,8 @@
 #define MyDetectorConstruction_h
 
 #include "G4VUserDetectorConstruction.hh"
+#include "RadiatorDescription.hh"
+#include "G4ThreeVector.hh"
 #include "globals.hh"
 
 class G4Box;
@@ -24,19 +26,10 @@ class MyDetectorMessenger;
 //-------------------------------
 // detector parameter variables
 
-#define SIZE 50
+#define MYSIZE 50
 #define WORLD 0
-#define SHIELD1 1
-#define INNER 2
-#define KOVAR1 3
-#define COLLIMATION1 4
-#define WINDOW 5
-#define GAS 6
-#define CERAMICS 7
-#define KOVAR2 8
-#define KOVAR3 9
-#define ANTICSHIELD 10
-#define ANTICSHIELD2 11
+#define WINDOW 1
+#define GAS 2
 
 //-------------------------------
 // detector parameter class
@@ -125,6 +118,16 @@ public:
   G4LogicalVolume *GetBeWindowsVolume() const { return fBeWindowsVolume; }
   G4LogicalVolume *GetGasVolume() const { return fGasVolume; }
 
+  //...
+  //...
+public:
+  RadiatorDescription *GetRadiatorDescription() const { return fRadiatorDescription; }
+  G4Material*  GetAbsorberMaterial() const;
+private:
+  RadiatorDescription* fRadiatorDescription;
+  //...
+  //...
+
 protected:
   G4LogicalVolume *fAnticShieldVolume;
   G4LogicalVolume *fAnticShieldVolume2;
@@ -139,10 +142,10 @@ private:
   G4bool checkOverlaps;
   G4UserLimits *fStepLimit;
 
-  MyDetectorParameters *fDetPar[SIZE];
-  G4CSGSolid *fSolid[SIZE];
-  G4LogicalVolume *fLogic[SIZE];
-  G4VPhysicalVolume *fPhysc[SIZE];
+  MyDetectorParameters *fDetPar[MYSIZE];
+  G4CSGSolid *fSolid[MYSIZE];
+  G4LogicalVolume *fLogic[MYSIZE];
+  G4VPhysicalVolume *fPhysc[MYSIZE];
 };
 
 #endif

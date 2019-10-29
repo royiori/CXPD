@@ -110,7 +110,7 @@
 
 // My physics process
 #include "MyPhysListEM.hh"
-//#include "TransitionRadiationPhysics.hh"
+#include "TransitionRadiationPhysics.hh"
 
 #include "Verbose.hh"
 #include "MyPhysicsList.hh"
@@ -150,7 +150,7 @@ MyPhysicsList::MyPhysicsList() : G4VModularPhysicsList(),
     // options: (gamma_lepto_nuclear)
     // G4BertiniElectroNuclearBuilder.cc G4EmExtraPhysics.cc               G4EmMessenger.cc
     //fEMExtraPhysicsList = new G4EmExtraPhysics(verbose);
-    //fEMExtraPhysicsList = new TransitionRadiationPhysics(verbose);
+    fEMExtraPhysicsList = new TransitionRadiationPhysics(verbose);
 
     //-- Decays
     // options: (decay)
@@ -161,22 +161,22 @@ MyPhysicsList::MyPhysicsList() : G4VModularPhysicsList(),
     // options: (hadron_elastic)
     // G4ChargeExchangePhysics.cc    G4HadronElasticPhysics.cc     G4HadronElasticPhysicsLEND.cc G4HadronElasticPhysicsXS.cc   G4IonElasticPhysics.cc
     // G4HadronDElasticPhysics.cc    G4HadronElasticPhysicsHP.cc   G4HadronElasticPhysicsPHP.cc  G4HadronHElasticPhysics.cc
-    fHadronElasticPhysicsList = new G4HadronElasticPhysicsXS(verbose);
+    //fHadronElasticPhysicsList = new G4HadronElasticPhysicsXS(verbose);
 
     // options: (hadron_inelastic)
     // G4HadronInelasticQBBC.cc         G4HadronPhysicsFTFP_BERT_TRV.cc  G4HadronPhysicsQGSP_BERT.cc      G4HadronPhysicsQGSP_BIC_HP.cc    G4VHadronPhysics.cc
     // G4HadronPhysicsFTFP_BERT.cc      G4HadronPhysicsFTF_BIC.cc        G4HadronPhysicsQGSP_BERT_HP.cc   G4HadronPhysicsQGSP_FTFP_BERT.cc
     // G4HadronPhysicsFTFP_BERT_ATL.cc  G4HadronPhysicsINCLXX.cc         G4HadronPhysicsQGSP_BIC.cc       G4HadronPhysicsQGS_BIC.cc
     // G4HadronPhysicsFTFP_BERT_HP.cc   G4HadronPhysicsNuBeam.cc         G4HadronPhysicsQGSP_BIC_AllHP.cc G4HadronPhysicsShielding.cc
-    fHadronInelasticPhysicsList = new G4HadronInelasticQBBC(verbose);
+    //fHadronInelasticPhysicsList = new G4HadronInelasticQBBC(verbose);
 
     // options: (stopping)
     // G4StoppingPhysics.cc
-    fStoppingPhysicsList = new G4StoppingPhysics(verbose);
+    //fStoppingPhysicsList = new G4StoppingPhysics(verbose);
 
     // options: (ions)
     // G4IonBinaryCascadePhysics.cc G4IonINCLXXPhysics.cc        G4IonPhysics.cc              G4IonPhysicsPHP.cc           G4IonQMDPhysics.cc
-    fIonPhysicsList = new G4IonPhysics(verbose);
+    //fIonPhysicsList = new G4IonPhysics(verbose);
 
     //-- Neutron tracking cut
     // options: (limiters)
