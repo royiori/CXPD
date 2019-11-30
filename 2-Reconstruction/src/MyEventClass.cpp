@@ -1,5 +1,6 @@
 
 #include "MyEventClass.h"
+#include "MyRootClass.h"
 
 const double THRESHOLD = 0;
 
@@ -15,7 +16,6 @@ vector<double> values; //Q
 vector<double> errors; //dQ
 double Qmax;
 
-int llm = 0;
 double meanBx = 0, meanBy = 0, qtot = 0;    //bary
 double mCx = 0, mCy = 0, qtot2 = 0; //impact
 //double qtot = 0, qtot2 = 0;
@@ -300,6 +300,9 @@ MyEventClass::MyEventClass(int _id, int _xmin, int _xmax, int _ymin, int _ymax)
     e1 = NULL;
     e2 = NULL;
     lCovAxis = NULL;
+	for (int i=0 ; i <20; i++)
+		lPrinAxisN[i] =NULL;
+	lPrinAxisN[20] = NULL;
 
     //method 2
     HitDist = 1.;
@@ -339,8 +342,17 @@ MyEventClass::~MyEventClass()
         delete lCovAxis;
     if (info != NULL)
         delete info;
+	for (int i=0 ; i <20; i++){
+		if (lPrinAxisN[i] != NULL)
+			delete lPrinAxisN[i];
+		}
 
     data.clear();
+	coords.clear();
+	//coords.swap(vector<pair<double, double>>());
+    values.clear();
+	//values.swap(vector<double>());
+    errors.clear();
 }
 
 //______________________________________________________________________________
@@ -618,7 +630,7 @@ void MyEventClass::AnalysisHist1()
 
         lPk = minuit->GetParameter(0);
         lPb = mBy - lPk * mBx;
-        if (abs(lPk) < 0.01)
+        if (abs(lPk) < 0.00001)
             lPk = 0;
 
         //2.2 draw result
@@ -655,21 +667,22 @@ void MyEventClass::AnalysisHist1()
             if ((maxx - minx) / (maxy - miny) < nEllipticity && (maxx - minx) / (maxy - miny) > 1 / nEllipticity)
             { //判断fat事例的圆形程度
                 dataQFlag = QF_FAT;
+				llm++;
                 f2D->SetTitle(Form("Event %d (identified as Fatty events)", id));
 
-                mCovPoint = new TMarker(mBx, mBy, 31);
+                /*mCovPoint = new TMarker(mBx, mBy, 31);
                 mCovPoint->SetMarkerColor(kRed);
                 mCovPoint->SetMarkerSize(2.6);
                 mCovPoint->Draw();
 
                 lCovAxis = new TLine(lPrinAxis1->GetX1(), lPrinAxis1->GetY1(), lPrinAxis1->GetX2(), lPrinAxis1->GetY2());
                 lCovAxis->SetLineColor(kRed);
-                lCovAxis->Draw();
+                lCovAxis->Draw();*/
                 return;
             }
         }
     }
-
+	//cout<<"======== "<<aTheta2<<endl;
     //----------------------
     //3. cal mom3rd
     {
@@ -693,32 +706,28 @@ void MyEventClass::AnalysisHist1()
     //4. calculate 2nd mom max and define rmin
     double theta2 = (lPk == 0) ? TMath::Pi() / 2 : atan(-1 / lPk);
 
-    double mom2ndMid0 = 0;
+    double mom2ndMid0 = 100;
     double mom2ndMid1 = 0;
     double mom2ndMid2 = 0;
-    double shapeRatio = 0;
-    double rmin;
+    //double shapeRatio = 0;
+    double rmin = 0;
     double rmax = 0;
 
     int iterations = 0;
+	int babo = -1;
+
     double chooseIteration[4];
     double intermediateResult = 0;
-    double caluDecent = 0;
-    double pureMom2nd;
+    double caluDecent = -1;
     double calumom2nd;
-    double stepB2 = (mom3rd < 0) ? -0.08 / cos(theta2) : 0.08 / cos(theta2);
-    double clusterlength = 0;
+    double stepB2 = 0;
+	//double qSum = 0;
+	double lx11, lx21, ly11, ly21;
+	xn = 1.5;
 
-    const int iteranum = 10;
+    const int iteranum = 20;	//最大迭代次数(固定)/非固定迭代次数
 
-    do
-    {
-        mom2nd = 0;
-        mom2ndMax = 0;
-        mom2ndMin = 0;
-        rmin = 0;
-        pureMom2nd = 0;
-        for (int i = 0; i < N; i++)
+	/*for (int i = 0; i < N; i++)
         {
             double x = coords[i].first;
             double y = coords[i].second;
@@ -741,33 +750,117 @@ void MyEventClass::AnalysisHist1()
             pureMom2nd += mom2ndMid2;
 
             rmin += (mom2ndMid2);
+        }*/
+
+    do //迭代找到最佳值
+    {
+        mom2nd = 0;
+        mom2ndMax = 0;
+        mom2ndMin = 0;
+        rmin = 0;
+        pureMom2nd = 0;
+        for (int i = 0; i < N; i++)
+        {
+            double x = coords[i].first;
+            double y = coords[i].second;
+            double q = values[i];
+
+            double x0 = (lPk * lPk * mBx + lPk * (y - mBy) + x) / (lPk * lPk + 1); //到主轴的坐标
+            double y0 = lPk * (x0 - mBx) + mBy;
+
+            double d = (lPk == 0) ? (x - mBx) : (y - b2 - k2 * x) / sqrt(1 + k2 * k2);
+            if (d * mom3rd < 0)  //初始一半的判断
+                continue;
+
+            mom2ndMid0 = (pow(x - x0, 2) + pow(y - y0, 2));//去除q的影响 单纯从径迹看
+            mom2ndMid1 = q * (pow(mBx - x0, 2) + pow(mBy - y0, 2));
+            mom2ndMid2 = q * mom2ndMid0;
+
+            mom2nd += mom2ndMid1 + mom2ndMid2;
+            mom2ndMax += mom2ndMid1;
+            mom2ndMin += mom2ndMid2;
+            pureMom2nd += mom2ndMid0;
+
+            rmin += (mom2ndMid2);
+		//	if (iterations == 0)
+		//		qSum += q;
         }
-        if (iterations == 0)
+        if (iterations == 0) //初始值保存设置
         {
             calumom2nd = pureMom2nd;
-            clusterlength = mom2ndMax / mom2ndMin;
-        }
-        b2 = (clusterlength > 5) ? b2 + stepB2 : b2 - stepB2;
-        caluDecent = abs(pureMom2nd - intermediateResult) / calumom2nd;
-        //cout<<"the "<<iterations<<" times "<<pureMom2nd<<" value "<<caluDecent<<endl;
-        if (iterations == 0 || (caluDecent < 0.05 && chooseIteration[0] == 0 && pureMom2nd > 20))
-        { //限制条件找合适的截取矩
-            chooseIteration[0] = iterations;
+            clusterlength = (mom2ndMin == 0) ? 0 : mom2ndMax / mom2ndMin;
+			intermediateResult = pureMom2nd;
+			//stepB2 = clusterlength* 0.05 / cos(theta2); //可调参数——步长
+			stepB2 = xn / cos(theta2);
+			chooseIteration[0] = iterations;
             chooseIteration[1] = mom2ndMax;
             chooseIteration[2] = mom2ndMin;
             chooseIteration[3] = rmin;
+			if (iteranum == 0) break; //真正的初始算法
         }
+		if (calumom2nd > 440)						//设置主轴垂直轴的左右滑动加上不滑动的部分
+        	b2 = (mom3rd > 0) ? b2 + stepB2 : b2 - stepB2;
+		else
+			b2 = (mom3rd < 0) ? b2 + stepB2 : b2 - stepB2;
+		
+		lx11 = (lPk == 0) ? mBx : (ymin - b2) / k2;
+		ly11 = ymin;
+		lx21 = (lPk == 0) ? mBx : (ymax - b2) / k2;
+		ly21 = ymax;
+		lPrinAxisN[iterations] = new TLine(lx11, ly11, lx21, ly21);
+		lPrinAxisN[iterations]->SetLineColor(kGreen);
+		//lPrinAxisN[iterations]->Draw();
+		//cout<<"++--++- "<<iterations<<" "<<lPrinAxisN[iterations]<<endl;
+		if ( pureMom2nd > 440){
+			if ( abs(pureMom2nd - intermediateResult) / calumom2nd >= caluDecent) //限制条件找合适的截取矩
+				{
+				caluDecent = abs(pureMom2nd - intermediateResult) / calumom2nd;
+		        chooseIteration[0] = iterations;
+		        chooseIteration[1] = mom2ndMax;
+		        chooseIteration[2] = mom2ndMin;
+		        chooseIteration[3] = rmin;
+				//break;
+		    }
+		}
+		//else
+		//	break;
+		
+        //cout<<"the "<<iterations<<" times "<<clusterlength<<" b "<<b2<<" Iter "<<chooseIteration[0]<<" mom2nd "<<pureMom2nd<<" value "<<caluDecent<<endl;
+
+		if (pureMom2nd == intermediateResult){
+			babo ++;
+			if (babo>1)
+				break;
+			}
+		else
+			babo = 0;
         intermediateResult = pureMom2nd;
         iterations++;
-    } while (iterations < iteranum);
+		
+    } while (iterations < iteranum );
+	//} while (pureMom2nd > 0 );
+	//cout<<" "<<chooseIteration[0]<<endl;
+	//cout<<id<<endl;
+	//cout<<"--------------------"<<endl;
+	/*if ( clusterlength > 10){
+		aTheta1 = -1000;
+		return;
+		}*/
+	chooseIteration[0] =(chooseIteration[0] == 0 && caluDecent == -1)? iterations : chooseIteration[0];
+	if (calumom2nd > 440)		//旧有的 循环完再拿保存值做处理
+        b2 = (mom3rd > 0) ? b2 - (iterations - chooseIteration[0]) * stepB2 : b2 + (iterations - chooseIteration[0]) * stepB2;
+	else
+		b2 = (mom3rd < 0) ? b2 - (iterations - chooseIteration[0]) * stepB2 : b2 + (iterations - chooseIteration[0]) * stepB2;
 
-    b2 = (clusterlength > 5) ? b2 - (iteranum - chooseIteration[0]) * stepB2 : b2 + (iteranum - chooseIteration[0]) * stepB2;
     mom2ndMax = chooseIteration[1];
     mom2ndMin = chooseIteration[2];
     rmin = chooseIteration[3];
 
-    double xintersecton = (b2 - lPb) / (lPk - k2);
-    double yintersecton = k2 * xintersecton + b2;
+	double xintersecton = (lPk == 0) ? meanBx :(b2-lPb)/(lPk-k2);
+	double yintersecton = (lPk == 0) ? meanBy :k2 * xintersecton + b2;
+
+	//double xintersecton = meanBx;
+	//double yintersecton = meanBy;
 
     //4.2 draw result
     double lx1 = (lPk == 0) ? mBx : (ymin - b2) / k2;
@@ -781,7 +874,7 @@ void MyEventClass::AnalysisHist1()
     //mom2nd /=  qtot;
     mom2ndMax /= qtot;
     mom2ndMin /= qtot;
-    shapeRatio = (mom2ndMin == 0) ? 0 : mom2ndMax / mom2ndMin;
+    //shapeRatio = (mom2ndMin == 0) ? 0 : mom2ndMax / mom2ndMin;
 
     rmin /= 2 * qtot;
     rmin = sqrt(rmin);
@@ -828,8 +921,8 @@ void MyEventClass::AnalysisHist1()
             continue;
         if (sqrt(pow(xintersecton - x, 2) + pow(yintersecton - y, 2)) < rmin)
             continue;
-        if (sqrt(pow(xintersecton - x, 2) + pow(yintersecton - y, 2)) > rmax)
-            continue;
+        /*if (sqrt(pow(xintersecton - x, 2) + pow(yintersecton - y, 2)) > rmax)
+            continue;*/
 
         mBx2 += q * x;
         mBy2 += q * y;
@@ -841,6 +934,8 @@ void MyEventClass::AnalysisHist1()
     mCx = mBx2;
     mCy = mBy2;
 
+	//mCx = 36; //定点值测试
+	//mCy = 36;
     //5.1 draw result
     mCovPoint = new TMarker(mCx, mCy, 31);
     mCovPoint->SetMarkerColor(kRed);
@@ -886,19 +981,27 @@ void MyEventClass::AnalysisHist1()
         aTheta1 = (mom3rd > 0) ? aTheta1 - TMath::Pi() : aTheta1;
     if (aTheta1 < 0)
         aTheta1 = (mom3rd < 0) ? aTheta1 + TMath::Pi() : aTheta1;
-
-    if (aTheta2 > 0)
-        aTheta2 = (mom3rd > 0) ? aTheta2 - TMath::Pi() : aTheta2;
-    if (aTheta2 < 0)
-        aTheta2 = (mom3rd < 0) ? aTheta2 + TMath::Pi() : aTheta2;
+/*
+    if (aTheta2 > 0){
+		double tmpTheta1 = (abs(aTheta2 - aTheta1 ) < TMath::Pi() )?  abs(aTheta2 - aTheta1 ) : 2 * TMath::Pi() - abs(aTheta2 - aTheta1 );
+		double tmpTheta2 = (abs(aTheta2 - TMath::Pi() - aTheta1) < TMath::Pi()) ? abs(aTheta2 - TMath::Pi() - aTheta1) : 2 * TMath::Pi() -abs(aTheta2 - TMath::Pi() - aTheta1);
+		aTheta2 =  (tmpTheta1 < tmpTheta2) ? aTheta2  : aTheta2 - TMath::Pi();
+		}
+		//aTheta2 = (mom3rd > 0) ? aTheta2 - TMath::Pi() : aTheta2;
+		
+        
+    if (aTheta2 < 0){
+		double tmpTheta1 = (abs(aTheta2 - aTheta1 ) < TMath::Pi() )?  abs(aTheta2 - aTheta1 ) : 2 * TMath::Pi() - abs(aTheta2 - aTheta1 );
+		double tmpTheta2 = (abs(aTheta2 + TMath::Pi() - aTheta1) < TMath::Pi()) ? abs(aTheta2 + TMath::Pi() - aTheta1) : 2 * TMath::Pi() -abs(aTheta2 + TMath::Pi() - aTheta1);
+		aTheta2 =  (tmpTheta1 > tmpTheta2) ? aTheta2 + TMath::Pi() : aTheta2;
+	}*/
     //k3 +=0;
-    if (mom3rd == 0 || dataQFlag == 2)
+    if (mom3rd == 0 || dataQFlag == QF_FAT)
     {
         aTheta1 = 10 * TMath::Pi() - 0.05;
         aTheta2 = 10 * TMath::Pi() - 0.05;
-        llm++;
+		llm++;
     }
-
     //-------------------
     //6. generate info
     //info->Append(Form("Singal to Noise:   \t%d\n", id));
@@ -908,8 +1011,9 @@ void MyEventClass::AnalysisHist1()
     info->Append(Form("Ejection Axis:  \tk=%.2f, b=%.2f\n", lCk, lCb));
     info->Append(Form("Mom 2rd:        \t%.5f\n", mom2ndMax / mom2ndMin));
     info->Append(Form("Mom 3rd:        \t%.10f\n", mom3rd));
-    info->Append(Form("r:        \t%.2f, \t%.2f\n", rmin, rmax));
-    //info->Append(Form("aTheta1:   \t%.2f\n", aTheta1));
+    info->Append(Form("r of phi and theta2:        \t%.2f, \t%.2f\n", phimin, phimax));
+    info->Append(Form("aTheta1:  aTheta2: \t%.2f, %.5f\n", aTheta1, aTheta2));
+	info->Append(Form("clul p2:        \t%.5f, %.2f\n", clusterlength, pureMom2nd));
 }
 
 //_____________________________
@@ -933,6 +1037,11 @@ void MyEventClass::Draw2DResultMethod1(const char *opt)
         lPrinAxis1->Draw();
     if (lCovAxis != NULL)
         lCovAxis->Draw();
+	for (int i=0 ; i <20; i++){ //stepB2 line
+		//cout<<"``~~~~ "<<lPrinAxisN[i]<<endl;
+		if (lPrinAxisN[i] != NULL)
+			lPrinAxisN[i] ->Draw();
+		}
 }
 
 void MyEventClass::DrawSearchResultMethod1()
@@ -943,6 +1052,9 @@ void MyEventClass::DrawSearchResultMethod1()
         e1->Draw();
     if (e2 != NULL)
         e2->Draw();
+	//ofstream culout;  //径迹详细信息查看
+    //culout.open("./culset.txt", ios::app);
+	//culout<<xn<<" "<<clusterlength<<" "<<aTheta2<<endl;
 }
 
 // 通用的结果填图

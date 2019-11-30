@@ -1,5 +1,7 @@
 #include "MyRootClass.h"
 
+#include "time.h"
+
 using namespace std;
 
 MyRootClass::MyRootClass(TString fp, TString pp)
@@ -357,17 +359,22 @@ void MyRootClass::IniHistogram()
         delete hIPoint;
         delete hPol1;
         delete hPol2;
+		delete hDebug;
     }
     hAll1 = new TH2F("hAll1", "Histogram of all hits", NX, 1, NX + 1, NY, 1, NY + 1);
     hAll2 = new TH2F("hAll2", "Histogram of all hits", NX, 1, NX + 1, NY, 1, NY + 1);
     hBaryCenter = new TH2F("hBaryCenter", "Histogram of all barycenters", NX, 1, NX + 1, NY, 1, NY + 1);
     hIPoint = new TH2F("hIPoint", "Histogram of all IP points", NX, 1, NX + 1, NY, 1, NY + 1);
-    hPol1 = new TH1F("hPol1", "#theta of the bary-center line", 100, -TMath::Pi(), TMath::Pi());
-    hPol2 = new TH1F("hPol2", "#theta of the fitted Polarization \n par[0]*pow(cos(x[0]-par[1]),2)+par[2]", 40, -TMath::Pi(), TMath::Pi());
+    hPol1 = new TH1F("hPol1", "#theta of the bary-center line", 40, -TMath::Pi(), TMath::Pi());
+    hPol2 = new TH1F("hPol2", "#theta of the fitted Polarization \n par[0]*pow(cos(x[0]-par[1]),2)+par[2]", 40, -TMath::Pi()/2, TMath::Pi()/2);
     hPol2->GetXaxis()->SetTitle("#theta");
     hPol2->GetYaxis()->SetTitle("counts");
+	//hDebug = new TH1F("hDebug", "now it's mom2nd", 50, 0, 70);
+	//hDebug->SetStats(kTRUE);
+
+
     fEventList.clear();
-}
+} 
 
 //______________________________________________________________________________
 // analysis directory
@@ -399,6 +406,10 @@ void MyRootClass::AnalysisDir(TString fileDir)
     for (int i = 0; i < (int)dataList.size(); i++)
         AnalysisFile(dataList[i]);
 
+	/*TCanvas *can11 = new TCanvas("can11","multigraph",10,10,700,500);
+	can11->cd();
+	hDebug->Draw();*/
+
     cout << "----> " << nEvent << " events recorded." << endl;
 }
 
@@ -412,6 +423,10 @@ void MyRootClass::Analysis(TString filePath)
     IniHistogram();
     AnalysisFile(filePath);
 
+	/*TCanvas *can11 = new TCanvas("can11","multigraph",10,10,700,500);
+	can11->cd();
+	hDebug->Draw();*/
+
     cout << "----> " << nEvent << " events recorded." << endl;
 }
 
@@ -420,9 +435,11 @@ void MyRootClass::Analysis(TString filePath)
 //
 void MyRootClass::AnalysisFile(TString filePath)
 {
+	clock_t start = clock();
     cout << "--> Opening: " << filePath << endl;
     ifstream ifSignal(filePath, ios::binary);
 
+	llmNum =0;
     while (ifSignal.good())
     {
         unsigned short _data[NX][NY];
@@ -475,24 +492,27 @@ void MyRootClass::AnalysisFile(TString filePath)
         else //method 1
         {
             fEvent->Fill2DPlot(hAll2);
-            fEvent->FillBaryCenter(hBaryCenter);
-            fEvent->FillIPpoint(hIPoint);
+            //fEvent->FillBaryCenter(hBaryCenter);
+            //fEvent->FillIPpoint(hIPoint);
 			fEvent->FillPolarization1(hPol1);
             fEvent->FillPolarization2(hPol2);
+			//fEvent->Filllengththelongest(hDebug);
         }
 
-        fEventList.push_back(fEvent);
-
+		//fEventList.push_back(fEvent);
         nEvent++;
-        //delete fEvent;
-
-        if (nEvent % 100 == 0)
-            cout << "Dealed: " << nEvent << " " << nEventToAnalysis << endl;
-
+		llmNum =fEvent->GetNeedNum();
+		//if (fEvent->GetNeedNum() > 0)
+        delete fEvent;
+		//else {fEventList.push_back(fEvent);}
+        if (nEvent % 100 == 0){
+			clock_t stop = clock();
+            cout << "Dealed: " << nEvent << " " <<(double)(stop - start)/CLOCKS_PER_SEC<<" s passed. total event: "<< nEventToAnalysis << endl;
+			start = stop;
+		}
         if (nEventToAnalysis > 0 && nEvent >= nEventToAnalysis)
             break;
     }
-
     ifSignal.close();
 }
 
@@ -513,7 +533,7 @@ void MyRootClass::DrawPre(const char *opt)
     while (_ip >= 1)
     {
         _ip--;
-        if (fEventList.at(_ip)->GetDataQuality() == 1)
+    //    if (fEventList.at(_ip)->GetDataQuality() == 1)
             break;
     }
     ip = _ip;
@@ -529,10 +549,10 @@ void MyRootClass::DrawNext(const char *opt)
     while (_ip < (int)fEventList.size() - 1)
     {
         _ip++;
-        //if (fEventList.at(_ip)->GetNeedNum() < 0.1 && fEventList.at(_ip)->GetNeedNum() > 0){  //check the special dot
-        //cout<<fEventList.at(_ip)->GetNeedNum()<<endl;
-        if (fEventList.at(_ip)->GetDataQuality() == 1)
-            break;
+        //if (fEventList.at(_ip)->GetNeedNum() > 0.1 || fEventList.at(_ip)->GetNeedNum() < 0){  //check the special dot
+       		//cout<<fEventList.at(_ip)->GetNeedNum()<<endl;
+	    if (fEventList.at(_ip)->GetDataQuality() == 1)
+	        break;
         //}
     }
 
@@ -589,7 +609,7 @@ Double_t fitFunction(Double_t *x, Double_t *par)
 
 void MyRootClass::ShowPolButtonFunc(int flag, const char *opt)
 {
-    TF1 *hisFunc = new TF1("hisFunc", fitFunction, -TMath::Pi(), TMath::Pi(), 3);
+    TF1 *hisFunc = new TF1("hisFunc", fitFunction, -TMath::Pi()/2, TMath::Pi()/2, 3);
     //TF1 *hisFunc = new TF1("hisFunc",fitLineFunction,0,TMath::Pi(),2);
     ofstream outf;
     outf.open("./abc.txt", ios::app);
@@ -611,7 +631,8 @@ void MyRootClass::ShowPolButtonFunc(int flag, const char *opt)
         double parError1 = hisFunc->GetParError(0);
         outf << parError1 << " ";
         double parError2 = hisFunc->GetParError(2);
-        outf << parError2 << endl;
+        outf << parError2 << " "<<filePath<<" ";
+		outf<<llmNum<<" "<<nEvent<<endl;
         //double thechi2=hisFunc->GetChisquare();
         //outf<<thechi2<<" "<<endl;
         //cout<<"_____ "<<param1/(2*param2+param1)<<endl;

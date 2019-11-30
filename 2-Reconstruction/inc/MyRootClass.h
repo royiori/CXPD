@@ -64,6 +64,7 @@ public:
     void SetNEvent(int val) { nEventToAnalysis = val; }
     void DataSwitch(bool flag) { useped = flag; }
 
+	int llmNum;
 private:
     int ip;
     int nEvent;
@@ -104,6 +105,7 @@ private:
     TH2F *hIPoint;     // plot the all IP point;
     TH1F *hPol1;       // plot the barycenter line
     TH1F *hPol2;       // plot the polarization
+	TH1F *hDebug;
 
     vector<TH1F *> fPed;
     vector<MyEventClass *> fEventList;
