@@ -26,6 +26,9 @@ MyRootClass::MyRootClass(TString fp, TString pp)
     rMinScale = 1.;
     rMaxScale = 1.;
     nEllipticity = 1.5;
+	nIteranum = 20;
+	nXn = 1.5;
+	nShortlength = 440;
 
     HitDist = 0;
     MinHitsAsCluster = 20;
@@ -67,6 +70,12 @@ TString MyRootClass::GenerateSettingsText()
     settings += TString(Form("rMaxScale = %1.2f\n\n", rMaxScale));
     settings += TString("#The Fatty events screen by ellipticity, should be positive > 1, default is 1.5.\n");
     settings += TString(Form("nEllipticity = %1.2f\n\n", nEllipticity));
+	settings += TString("#The new algorithm iteranum, int should be positive > 1, default is 30.\n");
+	settings += TString(Form("new algorithm iteranum = %d\n\n", nIteranum));
+	settings += TString("#new algorithm iteranum step length, should be positive > 0, default is 1.5.\n");
+    settings += TString(Form("new algorithm step length  = %1.2f\n\n", nXn));
+	settings += TString("#new algorithm shortest track, observe the track length distribution, should be positive > 0, default is 440.\n");
+    settings += TString(Form("new algorithm shortest track = %d\n\n", nShortlength));
 
     settings += TString("\n-------------------------------\n");
     settings += TString("--                           --\n");
@@ -123,6 +132,12 @@ void MyRootClass::ReadSettings(TGText *text)
                 rMaxScale = WildCardReplace(line).Atof();
             if (line.BeginsWith("nEllipticity"))
                 nEllipticity = WildCardReplace(line).Atof();
+            if (line.BeginsWith("nIteranum"))
+                nIteranum = WildCardReplace(line).Atof();
+            if (line.BeginsWith("nXn"))
+                nXn = WildCardReplace(line).Atof();
+            if (line.BeginsWith("nShortlength"))
+                nShortlength = WildCardReplace(line).Atof();
             if (line.BeginsWith("HitDist"))
                 HitDist = WildCardReplace(line).Atoi();
             if (line.BeginsWith("MinHitsAsCluster"))
@@ -147,6 +162,9 @@ TString MyRootClass::GenerateSettingsOutput()
     settings += TString(Form("rMinScale : %1.2f\n", rMinScale));
     settings += TString(Form("rMaxScale : %1.2f\n", rMaxScale));
     settings += TString(Form("nEllipticity : %1.2f\n", nEllipticity));
+    settings += TString(Form("nIteranum : %d\n", nIteranum));
+    settings += TString(Form("nXn : %1.2f\n", nXn));
+    settings += TString(Form("nShortlength : %d\n", nShortlength));
     settings += TString(Form("HitDist : %d\n", HitDist));
     settings += TString(Form("MinHitsAsCluster: %d\n", MinHitsAsCluster));
 
@@ -165,6 +183,9 @@ void MyRootClass::UpdateEnvParameters(TEnv *env)
     rMinScale = env->GetValue("rMinScale", rMinScale);
     rMaxScale = env->GetValue("rMaxScale", rMaxScale);
     nEllipticity = env->GetValue("nEllipticity", nEllipticity);
+    nIteranum = env->GetValue("nIteranum", nIteranum);
+    nXn = env->GetValue("nXn", nXn);
+    nShortlength = env->GetValue("nShortlength", nShortlength);
     HitDist = env->GetValue("HitDist", HitDist);
     MinHitsAsCluster = env->GetValue("MinHitsAsCluster", MinHitsAsCluster);
 }
@@ -181,6 +202,9 @@ void MyRootClass::SaveSettingsToEnv(TEnv *env)
     env->SetValue("rMinScale", rMinScale);
     env->SetValue("rMaxScale", rMaxScale);
     env->SetValue("nEllipticity", nEllipticity);
+    env->SetValue("nIteranum", nIteranum);
+    env->SetValue("nXn", nXn);
+    env->SetValue("nShortlength", nShortlength);
     env->SetValue("HitDist", HitDist);
     env->SetValue("MinHitsAsCluster", MinHitsAsCluster);
     env->SaveLevel(kEnvLocal);
@@ -369,7 +393,7 @@ void MyRootClass::IniHistogram()
     hPol2 = new TH1F("hPol2", "#theta of the fitted Polarization \n par[0]*pow(cos(x[0]-par[1]),2)+par[2]", 40, -TMath::Pi()/2, TMath::Pi()/2);
     hPol2->GetXaxis()->SetTitle("#theta");
     hPol2->GetYaxis()->SetTitle("counts");
-	//hDebug = new TH1F("hDebug", "now it's mom2nd", 50, 0, 70);
+	//hDebug = new TH1F("hDebug", "now it's mom2nd", 50, 0, 700);
 	//hDebug->SetStats(kTRUE);
 
 
@@ -384,6 +408,7 @@ void MyRootClass::AnalysisDir(TString fileDir)
     if (useped)
         ReadPed();
     IniHistogram();
+	llmNum =0;
 
     FILE *fp = gSystem->OpenPipe("ls " + fileDir + "/*.data", "r");
     if (!fp)
@@ -391,7 +416,7 @@ void MyRootClass::AnalysisDir(TString fileDir)
         cout << "----> NO data files exists in " << fileDir << "!" << endl;
         return;
     }
-
+	
     vector<TString> dataList;
     char line[1000];
     while (fgets(line, sizeof(line), fp))
@@ -418,6 +443,7 @@ void MyRootClass::AnalysisDir(TString fileDir)
 //
 void MyRootClass::Analysis(TString filePath)
 {
+	llmNum =0;
     if (useped)
         ReadPed();
     IniHistogram();
@@ -439,7 +465,6 @@ void MyRootClass::AnalysisFile(TString filePath)
     cout << "--> Opening: " << filePath << endl;
     ifstream ifSignal(filePath, ios::binary);
 
-	llmNum =0;
     while (ifSignal.good())
     {
         unsigned short _data[NX][NY];
@@ -457,7 +482,7 @@ void MyRootClass::AnalysisFile(TString filePath)
             for (int j = 0; j < NY; j++)
             {
                 fEvent->Fill(i, j, _data[i][j]);
-                double q = _data[i][j]; // - hPed->GetBinContent(i + 1, j + 1);
+                double q = _data[i][j];// - hPed->GetBinContent(i + 1, j + 1);
                 hAll1->Fill(i + 1, j + 1, (q < 0) ? 0 : q);
             }
 
@@ -479,9 +504,13 @@ void MyRootClass::AnalysisFile(TString filePath)
             fEvent->SetRMinScale(rMinScale);
             fEvent->SetRMaxScale(rMaxScale);
             fEvent->SetEllipticity(nEllipticity);
+			fEvent->SetAlgoIter(nIteranum);
+			fEvent->SetAlgoShortest(nShortlength);
+			fEvent->SetAlgoStepLength(nXn);
         }
 
         //分析
+		//cout<<hPed<<"............ "<<useped<<endl;
         fEvent->GenerateHist((useped) ? hPed : NULL);
 
         //分析结果填图
@@ -501,7 +530,8 @@ void MyRootClass::AnalysisFile(TString filePath)
 
 		//fEventList.push_back(fEvent);
         nEvent++;
-		llmNum =fEvent->GetNeedNum();
+		llmNum +=fEvent->GetNeedNum();
+		//cout<<"sum of llmNum "<<llmNum<<endl;
 		//if (fEvent->GetNeedNum() > 0)
         delete fEvent;
 		//else {fEventList.push_back(fEvent);}

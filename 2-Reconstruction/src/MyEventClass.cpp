@@ -272,6 +272,7 @@ MyEventClass::MyEventClass(int _id, int _xmin, int _xmax, int _ymin, int _ymax)
     f2D_raw = NULL;
     info = new TString();
     info->Append(Form("Event Number:      \t%d\n", id));
+	llm =0;
 
     //method 1
     nEtchingMatrix = 3;
@@ -284,6 +285,9 @@ MyEventClass::MyEventClass(int _id, int _xmin, int _xmax, int _ymin, int _ymax)
     nEllipticity = 1.5;
     rMinScale = 1.;
     rMaxScale = 1.;
+	xn = 1.5;
+	iteranum = 20;
+	shortHead = 440;
 
     defVal = -1000;
     mBx = mBy = lPk = lPb = defVal;
@@ -487,8 +491,9 @@ void MyEventClass::GenerateHist(TH2F *hPed, bool anaflag)
             if (hPed != NULL)
             {
                 ped = hPed->GetBinContent(i + 1, j + 1);
+				//cout<<"here!!!! "<<endl;
             }
-
+			//cout<<"ok!!!! "<<ped<<endl;
             double q = data[i - xmin][j - ymin] - ped;
             q = (q < 0) ? 0 : q;
             f2D_raw->Fill(i + 1, j + 1, q);
@@ -721,11 +726,9 @@ void MyEventClass::AnalysisHist1()
     double caluDecent = -1;
     double calumom2nd;
     double stepB2 = 0;
-	//double qSum = 0;
+	double qSum = 0;
 	double lx11, lx21, ly11, ly21;
-	xn = 1.5;
-
-    const int iteranum = 20;	//最大迭代次数(固定)/非固定迭代次数
+	//xn = 1.5;  //monte carlo 1.5
 
 	/*for (int i = 0; i < N; i++)
         {
@@ -782,8 +785,8 @@ void MyEventClass::AnalysisHist1()
             pureMom2nd += mom2ndMid0;
 
             rmin += (mom2ndMid2);
-		//	if (iterations == 0)
-		//		qSum += q;
+			if (iterations == 0)
+				qSum += q;
         }
         if (iterations == 0) //初始值保存设置
         {
@@ -798,7 +801,7 @@ void MyEventClass::AnalysisHist1()
             chooseIteration[3] = rmin;
 			if (iteranum == 0) break; //真正的初始算法
         }
-		if (calumom2nd > 440)						//设置主轴垂直轴的左右滑动加上不滑动的部分
+		if (calumom2nd > shortHead)						//设置主轴垂直轴的左右滑动加上不滑动的部分 蒙卡440
         	b2 = (mom3rd > 0) ? b2 + stepB2 : b2 - stepB2;
 		else
 			b2 = (mom3rd < 0) ? b2 + stepB2 : b2 - stepB2;
@@ -809,9 +812,9 @@ void MyEventClass::AnalysisHist1()
 		ly21 = ymax;
 		lPrinAxisN[iterations] = new TLine(lx11, ly11, lx21, ly21);
 		lPrinAxisN[iterations]->SetLineColor(kGreen);
-		//lPrinAxisN[iterations]->Draw();
+		lPrinAxisN[iterations]->Draw();
 		//cout<<"++--++- "<<iterations<<" "<<lPrinAxisN[iterations]<<endl;
-		if ( pureMom2nd > 440){
+		if ( pureMom2nd > shortHead){
 			if ( abs(pureMom2nd - intermediateResult) / calumom2nd >= caluDecent) //限制条件找合适的截取矩
 				{
 				caluDecent = abs(pureMom2nd - intermediateResult) / calumom2nd;
@@ -846,6 +849,7 @@ void MyEventClass::AnalysisHist1()
 		aTheta1 = -1000;
 		return;
 		}*/
+	//cout<<endl;
 	chooseIteration[0] =(chooseIteration[0] == 0 && caluDecent == -1)? iterations : chooseIteration[0];
 	if (calumom2nd > 440)		//旧有的 循环完再拿保存值做处理
         b2 = (mom3rd > 0) ? b2 - (iterations - chooseIteration[0]) * stepB2 : b2 + (iterations - chooseIteration[0]) * stepB2;

@@ -62,7 +62,7 @@ public:
     void SaveSettingsToEnv(TEnv *env);
 
     void SetNEvent(int val) { nEventToAnalysis = val; }
-    void DataSwitch(bool flag) { useped = flag; }
+    void DataSwitch(bool flag) { useped = flag;}
 
 	int llmNum;
 private:
@@ -85,6 +85,9 @@ private:
 	double nEllipticity;
     double rMinScale;
     double rMaxScale;
+	int nIteranum;
+	double nXn;
+	int nShortlength;
 
     //methode-2
     int HitDist;

@@ -84,6 +84,9 @@ public:
     void SetEllipticity(double nEllip) { nEllipticity = nEllip; }
     void SetRMinScale(double scale) { rMinScale = scale; }
     void SetRMaxScale(double scale) { rMaxScale = scale; }
+	void SetAlgoIter(int val) {iteranum = val;}
+	void SetAlgoStepLength(double val) {xn = val;}
+	void SetAlgoShortest(int val) {shortHead = val;}
 
     //--- 算法1的作图
     void Draw2DResultMethod1(const char *opt);
@@ -146,7 +149,6 @@ private:
     double defVal;
 	double clusterlength;
 	double pureMom2nd;
-	double xn;
 
     TMarker *mBcenter;
     TMarker *mCovPoint;
@@ -169,6 +171,9 @@ private:
     double nEllipticity;
     double rMinScale;
     double rMaxScale;
+	int iteranum;
+	double xn;
+	int shortHead;
 
     void EtchHistogram(TH2F *, TH2F *);
     void ExpandHistogram(TH2F *, TH2F *);
