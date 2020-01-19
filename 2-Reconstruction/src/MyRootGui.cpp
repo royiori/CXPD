@@ -258,6 +258,7 @@ MyRootGui::MyRootGui(const TGWindow *p, int w, int h) : TGMainFrame(p, w, h)
     {
         fDataSwitchButton->SetOn();
         DataSwitch();
+		//cout<<"there "<<endl;
     }
     fSettingText->LoadBuffer(gMyRootClass->GenerateSettingsText());
 }

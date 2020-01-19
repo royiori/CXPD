@@ -15,10 +15,10 @@
 #include "TGaxis.h"
 #include "TEllipse.h"
 #include "TFile.h"
+#include "Riostream.h"
 
 #include <vector>
 #include <map>
-#include <iostream>
 
 //Quality of data, set according to criteria
 #define QF_PED 0
@@ -56,8 +56,11 @@ public:
 	void FillBaryCenter(TH2F *h) { if (mBx != defVal && mBy != defVal) h->Fill(mBx, mBy); }
     void FillIPpoint(TH2F *h) {if (mBx2 != defVal && mBy2 != defVal) h->Fill(mBx2, mBy2); }
     void FillPolarization1(TH1F *h) { if (aTheta1 != defVal) h->Fill(aTheta1); }
-    void FillPolarization2(TH1F *h) { if (aTheta2 != defVal) h->Fill(aTheta2); }
-    void Filllengththelongest(TH1F *h) { h->Fill(sqrt(mom2nd)); }
+    void FillPolarization2(TH1F *h) { if (aTheta2 != defVal) {
+		//if (aTheta2 < 0)
+		//aTheta2 = aTheta2 + TMath::Pi();
+		h->Fill(aTheta2); }}
+    void Filllengththelongest(TH1F *h) { h->Fill(clusterlength); }
 
     TMarker *GetBaryCenterAsMarker() { return mBcenter; }
     TLine *GetPrincipalAxis1() { return lPrinAxis1; }
@@ -70,7 +73,7 @@ public:
     int GetDataQuality() { return dataQFlag; }
     int GetClusterSize() { return clusterSize; }
     int GetPulseHeight() { return pulseHeight; }
-    double GetNeedNum() { return aTheta1; } // can choose a value
+    double GetNeedNum() { return llm; } // can choose a value
 
     //--- 算法1的相关参数设置
     void SetEtchingMatrixRank(int rank) { nEtchingMatrix = rank; }
@@ -81,6 +84,9 @@ public:
     void SetEllipticity(double nEllip) { nEllipticity = nEllip; }
     void SetRMinScale(double scale) { rMinScale = scale; }
     void SetRMaxScale(double scale) { rMaxScale = scale; }
+	void SetAlgoIter(int val) {iteranum = val;}
+	void SetAlgoStepLength(double val) {xn = val;}
+	void SetAlgoShortest(int val) {shortHead = val;}
 
     //--- 算法1的作图
     void Draw2DResultMethod1(const char *opt);
@@ -120,6 +126,7 @@ private:
     //--- basic info.
     int id;
     int nx, ny;
+	int llm;
     int xmin, xmax;
     int ymin, ymax;
     int clusterSize;
@@ -140,6 +147,8 @@ private:
     double mom2ndMax;
     double mom2ndMin;
     double defVal;
+	double clusterlength;
+	double pureMom2nd;
 
     TMarker *mBcenter;
     TMarker *mCovPoint;
@@ -148,6 +157,7 @@ private:
 	TLine *lP0p1;
 	TLine *lP1p2;
 	TLine *lP2p3;
+	TLine *lPrinAxisN[30];
     TEllipse *e1;
     TEllipse *e2;
     TLine *lCovAxis;
@@ -161,6 +171,9 @@ private:
     double nEllipticity;
     double rMinScale;
     double rMaxScale;
+	int iteranum;
+	double xn;
+	int shortHead;
 
     void EtchHistogram(TH2F *, TH2F *);
     void ExpandHistogram(TH2F *, TH2F *);

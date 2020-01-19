@@ -39,6 +39,8 @@ public:
   double GetGunPx() { return gunPolarization[0]; }
   double GetGunPy() { return gunPolarization[1]; }
   double GetGunPz() { return gunPolarization[2]; }
+  double GetNewPolarX() {return newPola[0];}
+  double GetNewPolarY() {return newPola[1];}
   double GetdonPDGID() { return donPDGID; }
   MyGunMessenger *fGunMessenger;
 
@@ -54,6 +56,7 @@ public:
   void SetGunPosition(G4ThreeVector pos) { gunPos = pos; }
   void SetGunDirection(G4ThreeVector dir) { gunDirection = dir; }
   void SetGunPolarization(G4ThreeVector pol) { gunPolarization = pol; }
+  void SetGunEllipPolar(G4double val) {gunPartPolarzation = val;}
   void SetParticle();
   G4double theparax = 0;
   G4double theparay = 0;
@@ -73,6 +76,9 @@ private:
   G4ThreeVector gunPos;
   G4ThreeVector gunDirection;
   G4ThreeVector gunPolarization;
+  G4ThreeVector newPolarization;
+  G4ThreeVector newPola;
+  G4double gunPartPolarzation;
 
   G4String fRootFile;
   G4String fTxtFile;

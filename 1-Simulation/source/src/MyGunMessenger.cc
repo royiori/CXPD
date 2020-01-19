@@ -45,6 +45,11 @@ MyGunMessenger::MyGunMessenger(MyGunAction *Gun)
     gunPolCmd->SetParameterName("Px", "Py", "Pz", true, true);
     gunPolCmd->SetRange("Pz==0.");
 
+	gunPartPolarCmd = new G4UIcmdWithADouble("/MySimulation/gun/partpolarization", this);
+    gunPartPolarCmd->SetGuidance("Set the Elliptical Partially polarized of all particle.");
+    gunPartPolarCmd->SetParameterName("percentage", true, true);
+    gunPartPolarCmd->SetRange("percentage <=1 && percentage >=0");
+
     fRootFileCmd = new G4UIcmdWithAString("/MySimulation/gun/setRootName", this);
     fRootFileCmd->SetGuidance("set name for the root file");
 
@@ -63,6 +68,7 @@ MyGunMessenger::~MyGunMessenger()
     delete gunDirCmd;
     delete gunPosCmd;
     delete gunPolCmd;
+	delete gunPartPolarCmd;
 
     delete fRootFileCmd;
     delete fProgFileCmd;
@@ -86,6 +92,8 @@ void MyGunMessenger::SetNewValue(G4UIcommand *command,
         fAction->SetGunPosition(gunPosCmd->GetNew3VectorValue(newValue));
     if (command == gunPolCmd)
         fAction->SetGunPolarization(gunPolCmd->GetNew3VectorValue(newValue));    
+	if (command == gunPartPolarCmd)
+        fAction->SetGunEllipPolar(gunPartPolarCmd->GetNewDoubleValue(newValue));
 
     if (command == fRootFileCmd)
         fAction->SetRootFileName(newValue);

@@ -1,5 +1,7 @@
 #include "MyRootClass.h"
 
+#include "time.h"
+
 using namespace std;
 
 MyRootClass::MyRootClass(TString fp, TString pp)
@@ -24,6 +26,9 @@ MyRootClass::MyRootClass(TString fp, TString pp)
     rMinScale = 1.;
     rMaxScale = 1.;
     nEllipticity = 1.5;
+	nIteranum = 20;
+	nXn = 1.5;
+	nShortlength = 440;
 
     HitDist = 0;
     MinHitsAsCluster = 20;
@@ -65,6 +70,12 @@ TString MyRootClass::GenerateSettingsText()
     settings += TString(Form("rMaxScale = %1.2f\n\n", rMaxScale));
     settings += TString("#The Fatty events screen by ellipticity, should be positive > 1, default is 1.5.\n");
     settings += TString(Form("nEllipticity = %1.2f\n\n", nEllipticity));
+	settings += TString("#The new algorithm iteranum, int should be positive > 1, default is 30.\n");
+	settings += TString(Form("nIteranum = %d\n\n", nIteranum));
+	settings += TString("#new algorithm iteranum step length, should be positive > 0, default is 1.5.\n");
+    settings += TString(Form("nXn = %1.2f\n\n", nXn));
+	settings += TString("#new algorithm shortest track, observe the track length distribution, should be positive > 0, default is 440.\n");
+    settings += TString(Form("nShortlength = %d\n\n", nShortlength));
 
     settings += TString("\n-------------------------------\n");
     settings += TString("--                           --\n");
@@ -102,7 +113,7 @@ void MyRootClass::ReadSettings(TGText *text)
         {
             TString line(text->GetLine(pos, 100));
             if (line.BeginsWith("nEventToAnalysis"))
-                nEventToAnalysis = WildCardReplace(line).Atoi();
+				nEventToAnalysis = WildCardReplace(line).Atoi();
             if (line.BeginsWith("nEtchingMatrix"))
                 nEtchingMatrix = WildCardReplace(line).Atoi();
             if (line.BeginsWith("nExpandMatrix"))
@@ -121,6 +132,12 @@ void MyRootClass::ReadSettings(TGText *text)
                 rMaxScale = WildCardReplace(line).Atof();
             if (line.BeginsWith("nEllipticity"))
                 nEllipticity = WildCardReplace(line).Atof();
+            if (line.BeginsWith("nIteranum"))
+                nIteranum = WildCardReplace(line).Atof();
+            if (line.BeginsWith("nXn"))
+				nXn = WildCardReplace(line).Atof();
+            if (line.BeginsWith("nShortlength"))
+                nShortlength = WildCardReplace(line).Atof();
             if (line.BeginsWith("HitDist"))
                 HitDist = WildCardReplace(line).Atoi();
             if (line.BeginsWith("MinHitsAsCluster"))
@@ -145,6 +162,9 @@ TString MyRootClass::GenerateSettingsOutput()
     settings += TString(Form("rMinScale : %1.2f\n", rMinScale));
     settings += TString(Form("rMaxScale : %1.2f\n", rMaxScale));
     settings += TString(Form("nEllipticity : %1.2f\n", nEllipticity));
+    settings += TString(Form("nIteranum : %d\n", nIteranum));
+    settings += TString(Form("nXn : %1.2f\n", nXn));
+    settings += TString(Form("nShortlength : %d\n", nShortlength));
     settings += TString(Form("HitDist : %d\n", HitDist));
     settings += TString(Form("MinHitsAsCluster: %d\n", MinHitsAsCluster));
 
@@ -163,6 +183,9 @@ void MyRootClass::UpdateEnvParameters(TEnv *env)
     rMinScale = env->GetValue("rMinScale", rMinScale);
     rMaxScale = env->GetValue("rMaxScale", rMaxScale);
     nEllipticity = env->GetValue("nEllipticity", nEllipticity);
+    nIteranum = env->GetValue("nIteranum", nIteranum);
+    nXn = env->GetValue("nXn", nXn);
+    nShortlength = env->GetValue("nShortlength", nShortlength);
     HitDist = env->GetValue("HitDist", HitDist);
     MinHitsAsCluster = env->GetValue("MinHitsAsCluster", MinHitsAsCluster);
 }
@@ -179,6 +202,9 @@ void MyRootClass::SaveSettingsToEnv(TEnv *env)
     env->SetValue("rMinScale", rMinScale);
     env->SetValue("rMaxScale", rMaxScale);
     env->SetValue("nEllipticity", nEllipticity);
+    env->SetValue("nIteranum", nIteranum);
+    env->SetValue("nXn", nXn);
+    env->SetValue("nShortlength", nShortlength);
     env->SetValue("HitDist", HitDist);
     env->SetValue("MinHitsAsCluster", MinHitsAsCluster);
     env->SaveLevel(kEnvLocal);
@@ -357,17 +383,22 @@ void MyRootClass::IniHistogram()
         delete hIPoint;
         delete hPol1;
         delete hPol2;
+		delete hDebug;
     }
     hAll1 = new TH2F("hAll1", "Histogram of all hits", NX, 1, NX + 1, NY, 1, NY + 1);
     hAll2 = new TH2F("hAll2", "Histogram of all hits", NX, 1, NX + 1, NY, 1, NY + 1);
     hBaryCenter = new TH2F("hBaryCenter", "Histogram of all barycenters", NX, 1, NX + 1, NY, 1, NY + 1);
     hIPoint = new TH2F("hIPoint", "Histogram of all IP points", NX, 1, NX + 1, NY, 1, NY + 1);
-    hPol1 = new TH1F("hPol1", "#theta of the bary-center line", 100, -TMath::Pi(), TMath::Pi());
-    hPol2 = new TH1F("hPol2", "#theta of the fitted Polarization \n par[0]*pow(cos(x[0]-par[1]),2)+par[2]", 40, -TMath::Pi(), TMath::Pi());
+    hPol1 = new TH1F("hPol1", "#theta of the bary-center line", 40, -TMath::Pi(), TMath::Pi());
+    hPol2 = new TH1F("hPol2", "#theta of the fitted Polarization \n par[0]*pow(cos(x[0]-par[1]),2)+par[2]", 40, -TMath::Pi()/2, TMath::Pi()/2);
     hPol2->GetXaxis()->SetTitle("#theta");
     hPol2->GetYaxis()->SetTitle("counts");
+	//hDebug = new TH1F("hDebug", "now it's mom2nd", 50, 0, 700);
+	//hDebug->SetStats(kTRUE);
+
+
     fEventList.clear();
-}
+} 
 
 //______________________________________________________________________________
 // analysis directory
@@ -377,6 +408,7 @@ void MyRootClass::AnalysisDir(TString fileDir)
     if (useped)
         ReadPed();
     IniHistogram();
+	llmNum =0;
 
     FILE *fp = gSystem->OpenPipe("ls " + fileDir + "/*.data", "r");
     if (!fp)
@@ -384,7 +416,7 @@ void MyRootClass::AnalysisDir(TString fileDir)
         cout << "----> NO data files exists in " << fileDir << "!" << endl;
         return;
     }
-
+	
     vector<TString> dataList;
     char line[1000];
     while (fgets(line, sizeof(line), fp))
@@ -399,6 +431,10 @@ void MyRootClass::AnalysisDir(TString fileDir)
     for (int i = 0; i < (int)dataList.size(); i++)
         AnalysisFile(dataList[i]);
 
+	/*TCanvas *can11 = new TCanvas("can11","multigraph",10,10,700,500);
+	can11->cd();
+	hDebug->Draw();*/
+
     cout << "----> " << nEvent << " events recorded." << endl;
 }
 
@@ -407,10 +443,15 @@ void MyRootClass::AnalysisDir(TString fileDir)
 //
 void MyRootClass::Analysis(TString filePath)
 {
+	llmNum =0;
     if (useped)
         ReadPed();
     IniHistogram();
     AnalysisFile(filePath);
+
+	/*TCanvas *can11 = new TCanvas("can11","multigraph",10,10,700,500);
+	can11->cd();
+	hDebug->Draw();*/
 
     cout << "----> " << nEvent << " events recorded." << endl;
 }
@@ -420,6 +461,7 @@ void MyRootClass::Analysis(TString filePath)
 //
 void MyRootClass::AnalysisFile(TString filePath)
 {
+	clock_t start = clock();
     cout << "--> Opening: " << filePath << endl;
     ifstream ifSignal(filePath, ios::binary);
 
@@ -440,7 +482,7 @@ void MyRootClass::AnalysisFile(TString filePath)
             for (int j = 0; j < NY; j++)
             {
                 fEvent->Fill(i, j, _data[i][j]);
-                double q = _data[i][j]; // - hPed->GetBinContent(i + 1, j + 1);
+                double q = _data[i][j];// - hPed->GetBinContent(i + 1, j + 1);
                 hAll1->Fill(i + 1, j + 1, (q < 0) ? 0 : q);
             }
 
@@ -462,9 +504,13 @@ void MyRootClass::AnalysisFile(TString filePath)
             fEvent->SetRMinScale(rMinScale);
             fEvent->SetRMaxScale(rMaxScale);
             fEvent->SetEllipticity(nEllipticity);
+			fEvent->SetAlgoIter(nIteranum);
+			fEvent->SetAlgoShortest(nShortlength);
+			fEvent->SetAlgoStepLength(nXn);
         }
 
         //分析
+		//cout<<hPed<<"............ "<<useped<<endl;
         fEvent->GenerateHist((useped) ? hPed : NULL);
 
         //分析结果填图
@@ -475,24 +521,28 @@ void MyRootClass::AnalysisFile(TString filePath)
         else //method 1
         {
             fEvent->Fill2DPlot(hAll2);
-            fEvent->FillBaryCenter(hBaryCenter);
-            fEvent->FillIPpoint(hIPoint);
+            //fEvent->FillBaryCenter(hBaryCenter);
+            //fEvent->FillIPpoint(hIPoint);
 			fEvent->FillPolarization1(hPol1);
             fEvent->FillPolarization2(hPol2);
+			//fEvent->Filllengththelongest(hDebug);
         }
 
-        fEventList.push_back(fEvent);
-
+		fEventList.push_back(fEvent);
         nEvent++;
+		llmNum +=fEvent->GetNeedNum();
+		//cout<<"sum of llmNum "<<llmNum<<endl;
+		//if (fEvent->GetNeedNum() > 0)
         //delete fEvent;
-
-        if (nEvent % 100 == 0)
-            cout << "Dealed: " << nEvent << " " << nEventToAnalysis << endl;
-
+		//else {fEventList.push_back(fEvent);}
+        if (nEvent % 100 == 0){
+			clock_t stop = clock();
+            cout << "Dealed: " << nEvent << " " <<(double)(stop - start)/CLOCKS_PER_SEC<<" s passed. total event: "<< nEventToAnalysis << endl;
+			start = stop;
+		}
         if (nEventToAnalysis > 0 && nEvent >= nEventToAnalysis)
             break;
     }
-
     ifSignal.close();
 }
 
@@ -513,7 +563,7 @@ void MyRootClass::DrawPre(const char *opt)
     while (_ip >= 1)
     {
         _ip--;
-        if (fEventList.at(_ip)->GetDataQuality() == 1)
+    //    if (fEventList.at(_ip)->GetDataQuality() == 1)
             break;
     }
     ip = _ip;
@@ -529,10 +579,10 @@ void MyRootClass::DrawNext(const char *opt)
     while (_ip < (int)fEventList.size() - 1)
     {
         _ip++;
-        //if (fEventList.at(_ip)->GetNeedNum() < 0.1 && fEventList.at(_ip)->GetNeedNum() > 0){  //check the special dot
-        //cout<<fEventList.at(_ip)->GetNeedNum()<<endl;
-        if (fEventList.at(_ip)->GetDataQuality() == 1)
-            break;
+        //if (fEventList.at(_ip)->GetNeedNum() > 0.1 || fEventList.at(_ip)->GetNeedNum() < 0){  //check the special dot
+       		//cout<<fEventList.at(_ip)->GetNeedNum()<<endl;
+	    if (fEventList.at(_ip)->GetDataQuality() == 1)
+	        break;
         //}
     }
 
@@ -589,7 +639,7 @@ Double_t fitFunction(Double_t *x, Double_t *par)
 
 void MyRootClass::ShowPolButtonFunc(int flag, const char *opt)
 {
-    TF1 *hisFunc = new TF1("hisFunc", fitFunction, -TMath::Pi(), TMath::Pi(), 3);
+    TF1 *hisFunc = new TF1("hisFunc", fitFunction, -TMath::Pi()/2, TMath::Pi()/2, 3);
     //TF1 *hisFunc = new TF1("hisFunc",fitLineFunction,0,TMath::Pi(),2);
     ofstream outf;
     outf.open("./abc.txt", ios::app);
@@ -611,7 +661,8 @@ void MyRootClass::ShowPolButtonFunc(int flag, const char *opt)
         double parError1 = hisFunc->GetParError(0);
         outf << parError1 << " ";
         double parError2 = hisFunc->GetParError(2);
-        outf << parError2 << endl;
+        outf << parError2 << " "<<filePath<<" ";
+		outf<<llmNum<<" "<<nEvent<<endl;
         //double thechi2=hisFunc->GetChisquare();
         //outf<<thechi2<<" "<<endl;
         //cout<<"_____ "<<param1/(2*param2+param1)<<endl;

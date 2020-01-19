@@ -62,8 +62,9 @@ public:
     void SaveSettingsToEnv(TEnv *env);
 
     void SetNEvent(int val) { nEventToAnalysis = val; }
-    void DataSwitch(bool flag) { useped = flag; }
+    void DataSwitch(bool flag) { useped = flag;}
 
+	int llmNum;
 private:
     int ip;
     int nEvent;
@@ -84,6 +85,9 @@ private:
 	double nEllipticity;
     double rMinScale;
     double rMaxScale;
+	int nIteranum;
+	double nXn;
+	int nShortlength;
 
     //methode-2
     int HitDist;
@@ -104,6 +108,7 @@ private:
     TH2F *hIPoint;     // plot the all IP point;
     TH1F *hPol1;       // plot the barycenter line
     TH1F *hPol2;       // plot the polarization
+	TH1F *hDebug;
 
     vector<TH1F *> fPed;
     vector<MyEventClass *> fEventList;
