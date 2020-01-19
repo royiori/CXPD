@@ -71,11 +71,11 @@ TString MyRootClass::GenerateSettingsText()
     settings += TString("#The Fatty events screen by ellipticity, should be positive > 1, default is 1.5.\n");
     settings += TString(Form("nEllipticity = %1.2f\n\n", nEllipticity));
 	settings += TString("#The new algorithm iteranum, int should be positive > 1, default is 30.\n");
-	settings += TString(Form("new algorithm iteranum = %d\n\n", nIteranum));
+	settings += TString(Form("nIteranum = %d\n\n", nIteranum));
 	settings += TString("#new algorithm iteranum step length, should be positive > 0, default is 1.5.\n");
-    settings += TString(Form("new algorithm step length  = %1.2f\n\n", nXn));
+    settings += TString(Form("nXn = %1.2f\n\n", nXn));
 	settings += TString("#new algorithm shortest track, observe the track length distribution, should be positive > 0, default is 440.\n");
-    settings += TString(Form("new algorithm shortest track = %d\n\n", nShortlength));
+    settings += TString(Form("nShortlength = %d\n\n", nShortlength));
 
     settings += TString("\n-------------------------------\n");
     settings += TString("--                           --\n");
@@ -113,7 +113,7 @@ void MyRootClass::ReadSettings(TGText *text)
         {
             TString line(text->GetLine(pos, 100));
             if (line.BeginsWith("nEventToAnalysis"))
-                nEventToAnalysis = WildCardReplace(line).Atoi();
+				nEventToAnalysis = WildCardReplace(line).Atoi();
             if (line.BeginsWith("nEtchingMatrix"))
                 nEtchingMatrix = WildCardReplace(line).Atoi();
             if (line.BeginsWith("nExpandMatrix"))
@@ -135,7 +135,7 @@ void MyRootClass::ReadSettings(TGText *text)
             if (line.BeginsWith("nIteranum"))
                 nIteranum = WildCardReplace(line).Atof();
             if (line.BeginsWith("nXn"))
-                nXn = WildCardReplace(line).Atof();
+				nXn = WildCardReplace(line).Atof();
             if (line.BeginsWith("nShortlength"))
                 nShortlength = WildCardReplace(line).Atof();
             if (line.BeginsWith("HitDist"))
@@ -528,12 +528,12 @@ void MyRootClass::AnalysisFile(TString filePath)
 			//fEvent->Filllengththelongest(hDebug);
         }
 
-		//fEventList.push_back(fEvent);
+		fEventList.push_back(fEvent);
         nEvent++;
 		llmNum +=fEvent->GetNeedNum();
 		//cout<<"sum of llmNum "<<llmNum<<endl;
 		//if (fEvent->GetNeedNum() > 0)
-        delete fEvent;
+        //delete fEvent;
 		//else {fEventList.push_back(fEvent);}
         if (nEvent % 100 == 0){
 			clock_t stop = clock();

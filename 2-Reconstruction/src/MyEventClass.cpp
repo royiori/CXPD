@@ -851,7 +851,7 @@ void MyEventClass::AnalysisHist1()
 		}*/
 	//cout<<endl;
 	chooseIteration[0] =(chooseIteration[0] == 0 && caluDecent == -1)? iterations : chooseIteration[0];
-	if (calumom2nd > 440)		//旧有的 循环完再拿保存值做处理
+	if (calumom2nd > shortHead)		//旧有的 循环完再拿保存值做处理
         b2 = (mom3rd > 0) ? b2 - (iterations - chooseIteration[0]) * stepB2 : b2 + (iterations - chooseIteration[0]) * stepB2;
 	else
 		b2 = (mom3rd < 0) ? b2 - (iterations - chooseIteration[0]) * stepB2 : b2 + (iterations - chooseIteration[0]) * stepB2;
